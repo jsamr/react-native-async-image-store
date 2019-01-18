@@ -2,8 +2,13 @@
 
 **Pros**:
 
-- methods return promises (usage with async / await)
-- cache validation is fully compatible with `Cache-Control`, `Expires`, `Last-Modified`, and `ETag` HTTP headers for an optimal bandwidth consumption
+- you have fine-grain control on the cache with promise-based methods ; for example you can load a bunch of images with a progress status for offline usage
+- you define, globally or per-component, the cache strategy (immutable, HTTP or cache-only)
+- cache validation is fully compatible with `Cache-Control`, `Expires`, `Last-Modified`, and `ETag` HTTP headers for an optimal bandwidth consumption (when cache strategy set to HTTP)
+
+**Cons**:
+
+If you don't need this level of control on the cache, but are only concerned about performance, use [react-native-fast-image](https://github.com/DylanVann/react-native-fast-image) instead.
 
 ## Constructor params
 
@@ -32,6 +37,8 @@ But contrary to a browser cache:
 
 Because `no-store` directive defies the purpose of this library, it will be ignored unless `followNoStore` parameter is provided.
 
+For the same reason, `must-revalidate` directive is interpreted loosly by the Store. When revalidation cannot be operated because the network or origin server is unavailable, the Store will interpret requests for resources as if `only-if-cached` directive was given by the client, i.e. the react component, serving the stale resource in the meanwhile and ignoring `must-revalidate` directives.
+
 #### Followed directives
 
 - `must-revalidate`: force Store to revalidate image every time it is requested and stale;
@@ -53,7 +60,6 @@ When `Etag` or `Last-Modified` are present in an image response, there value wil
 
 If both headers are present, `ETag` will prevail.
 
-### Corner cases
+## Inspiration
 
-
-- If revalidation cannot be operated because the network or origin server is unavailable, the Store will serve the stale resource in the meanwhile, ignoring strict revalidation directives.
+Got inspiration from both [react-native-fast-image](https://github.com/DylanVann/react-native-fast-image) and []()

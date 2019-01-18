@@ -10,6 +10,7 @@
         "no-require-imports": true,
         "jsx-no-bind": true,
         "jsx-no-lambda": true,
+        "no-floating-promises": true,
         "no-unused-variable": [true, {"ignore-pattern": "^_"}]
 
     }

@@ -1,71 +1,124 @@
 import RNFetchBlob from 'rn-fetch-blob'
-import { FileLocator } from './FileLocator';
-import { RequestReport, SecuredImageSource, VersionTag } from './types.d'
+import { FileLocator } from './FileLocator'
+import { ImageSource, URIVersionTag, AsyncImageStoreConfig, HTTPHeaders } from './types'
+import { mergeDeepRight } from 'ramda'
+
+export interface RequestReport {
+  uri: string
+  expires: number
+  error: Error|null
+  versionTag: URIVersionTag | null
+  path: string
+}
+
+function getHeadersFromVersionTag(versionTag: URIVersionTag) {
+  const headers: HTTPHeaders = {}
+  if (versionTag.type === 'ETag') {
+    headers['If-None-Match'] = versionTag.value
+  } else if (versionTag.type === 'LastModified') {
+    headers['If-Modified-Since'] = versionTag.value
+  }
+  return headers
+}
+
+function expiryFromMaxAge(maxAge_s: number): number {
+  return maxAge_s * 1000 + new Date().getTime()
+}
 
 export class Fetcher {
 
-    private fileLocator: FileLocator
-    constructor(private name: string) {
-        this.fileLocator = new FileLocator(name)
+  private fileLocator: FileLocator
+  constructor(name: string, private config: AsyncImageStoreConfig) {
+    this.fileLocator = new FileLocator(name)
+  }
+
+  private prepareFetch(uri: string) {
+    return RNFetchBlob.config({
+      path: this.fileLocator.getURIFilename(uri)
+    })
+  }
+
+  private getVersionTagFromHeaders(headers: { [key: string]: string }): URIVersionTag|null {
+        // TODO resilience to case variations
+    if (headers.etag || headers.Etag) {
+      return {
+        type: 'ETag',
+        value: (headers.etag || headers.Etag).trim()
+      }
+    }
+    if (headers['last-modified'] || headers['Last-Modified']) {
+      return {
+        type: 'LastModified',
+        value: (headers['last-modified'] || headers['Last-Modified']).trim()
+      }
+    }
+    return null
+  }
+
+  private getExpirationFromHeaders(headers: HTTPHeaders): number {
+        // TODO resilience to case variations
+    if (headers['cache-control'] || headers['Cache-Control']) {
+      const contentType = headers['cache-control'] || headers['Cache-Control']
+      const directives = contentType.split(',')
+      for (const dir of directives) {
+                // console.info('DIRECTIVE', dir)
+        const match = /^max-age=(.*)/.exec(dir)
+        if (match) {
+          const [ _, group] = match
+          const maxAge_s = Number(group)
+          if (!isNaN(maxAge_s)) {
+            console.info('FOUND MAX AGE', maxAge_s)
+            return expiryFromMaxAge(maxAge_s)
+          }
+        }
+      }
+    }
+    if (headers.expires || headers.Expires) {
+      const expiresAt = headers.expires || headers.Expires
+      return Date.parse(expiresAt)
+    }
+        // console.info(`COULDN'T FIND EXPIRY OR MAX AGE INFORMATION, FALLBACK TO DEFAULT`)
+    return expiryFromMaxAge(this.config.defaultMaxAge)
+  }
+
+  public async saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport> {
+        // Override default cache-control
+    const headers = mergeDeepRight(userHeaders, { 'Cache-Control': 'max-age=31536000' })
+    try {
+      const response = await this.prepareFetch(uri).fetch('GET', uri, headers)
+      const error = response.respInfo.status >= 400 ? new Error(`Received status ${response.respInfo.status}`) : null
+      return {
+        uri,
+        error,
+        expires: this.config.overrideMaxAge ? expiryFromMaxAge(this.config.overrideMaxAge) : this.getExpirationFromHeaders(response.respInfo.headers),
+        path: this.fileLocator.getURIFilename(uri),
+        versionTag: this.getVersionTagFromHeaders(response.respInfo.headers)
+      }
+    } catch (error) {
+      return {
+        uri,
+        error,
+        expires: 0,
+        path: this.fileLocator.getURIFilename(uri),
+        versionTag: null
+      }
     }
 
-    private RNFetch(uri: string) {
-        return RNFetchBlob.config({
-            path: this.fileLocator.getURIFilename(uri)
-        })
-    }
+  }
 
-    private getVersionTagFromHeaders(headers: { [key: string]: string }): VersionTag|null {
-        if (headers['etag']) {
-            return {
-                type: 'ETag',
-                value: headers['etag'].trim()
-            }
-        }
-        if (headers['last-modified']) {
-            return {
-                type: 'LastModified',
-                value: headers['last-modified'].trim()
-            }
-        }
-        return null
+  public async revalidateImage({ uri, headers }: ImageSource, versionTag: URIVersionTag): Promise<RequestReport> {
+    const newHeaders = {
+      ...headers,
+      ...getHeadersFromVersionTag(versionTag)
     }
+    return this.saveImage({ uri, headers: newHeaders })
+  }
 
-    private getExpirationFromHeaders(headers: { [key: string]: string }): number {
-        if (headers['content-type']) {
-            const contentType = headers['content-type']
-            const directives = contentType.split(',')
-            for (const dir of directives) {
-                const match = /^max-age=(.*)/.exec(dir)
-                if (match) {
-                    const [ _, group] = match
-                    const maxAge_s = Number(group)
-                    if (!isNaN(maxAge_s)) {
-                        return maxAge_s * 1000 + new Date().getTime()
-                    }
-                }
-            }
-        }
-        if (headers['expires']) {
-            const expiresAt = headers['expires']
-            return Date.parse(expiresAt)
-        }
-        console.info(`COULDN'T FIND EXPIRY OR MAX AGE INFORMATION`)
-        return new Date().getTime()
-    }
+  public async imageExists({ uri }: ImageSource): Promise<boolean> {
+    return RNFetchBlob.fs.exists(this.fileLocator.getURIFilename(uri))
+  }
 
-    public async saveImage({ uri, headers, method }: SecuredImageSource): Promise<RequestReport> {
-        const response = await this.RNFetch(uri).fetch(method as any || 'GET', headers as any)
-        return {
-            uri,
-            error: response.respInfo.status >= 400,
-            expires: this.getExpirationFromHeaders(response.respInfo.headers),
-            path: this.fileLocator.getURIFilename(uri),
-            versionTag: this.getVersionTagFromHeaders(response.respInfo.headers)
-        }
-    }
-
-    public async imageExists({ uri }: SecuredImageSource): Promise<boolean> {
-        return RNFetchBlob.fs.exists(uri)
-    }
+  public async deleteImage({ uri }: ImageSource): Promise<void> {
+    return RNFetchBlob.fs.unlink(this.fileLocator.getURIFilename(uri))
+  }
 }
