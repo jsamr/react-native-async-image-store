@@ -1,14 +1,16 @@
 import invariant from 'invariant'
-import { AsyncImageStoreConfig, ImageSource, URIPatch, URIEvent, HTTPHeaders, URICacheState, URIEventListener, URICommandType } from './types'
-import { Fetcher, RequestReport } from './Fetcher'
+import { AsyncImageStoreConfig, ImageSource, URIPatch, URIEvent, HTTPHeaders, URICacheState, URIEventListener, URICommandType, StorageConstructor, StorageInstance } from './types'
+import { IODriver, RequestReport } from './IODriver'
 import { Platform } from 'react-native'
 import { State, ProposeFunction } from './State'
+import { Storage } from './Storage'
 
 export type Target = string|ImageSource
 
 const storesMap: Map<string, AsyncImageStore> = new Map()
 
-const defaultConfig: AsyncImageStoreConfig = {
+const defaultConfig = {
+  Storage: Storage as StorageConstructor,
   debug: false,
   defaultMaxAge: 86000
 }
@@ -35,11 +37,31 @@ function reportToProposal(report: RequestReport): URIPatch {
   }
 }
 
+/**
+ * This method allow config values to be JSON-stringified and persisted.
+ * It converts `Infinity` to `Number.MAX_SAFE_INTEGER`.
+ * 
+ * @param config 
+ */
+function normalizeUserConf(config: Partial<AsyncImageStoreConfig>): Partial<AsyncImageStoreConfig> {
+  const newConf = {
+    ...config
+  }
+  if (config.defaultMaxAge === Infinity) {
+    newConf.defaultMaxAge = Number.MAX_SAFE_INTEGER
+  }
+  if (config.overrideMaxAge === Infinity) {
+    newConf.overrideMaxAge = Number.MAX_SAFE_INTEGER
+  }
+  return newConf
+}
+
 export class AsyncImageStore {
-  private fetcher: Fetcher
+  private fetcher: IODriver
   private state: State
   private mounted: boolean = false
   private config: AsyncImageStoreConfig
+  private storage: StorageInstance
 
   constructor(private name: string, userConfig: Partial<AsyncImageStoreConfig>) {
     invariant(name !== '', 'AsyncImageStore: store name cannot be empty.')
@@ -47,11 +69,12 @@ export class AsyncImageStore {
     storesMap.set(name, this)
     const config = {
       ...defaultConfig,
-      ...userConfig
+      ...normalizeUserConf(userConfig)
     }
     this.config = config
-    this.fetcher = new Fetcher(name, config)
-    this.state = new State()
+    this.fetcher = new IODriver(name, config)
+    this.state = new State(name)
+    this.storage = new config.Storage(name)
     this.state.registerCommandReactor('PRELOAD', this.onPreload.bind(this))
     this.state.registerCommandReactor('REVALIDATE', this.onRevalidate.bind(this))
     this.state.registerCommandReactor('DELETE', this.onDelete.bind(this))
@@ -157,22 +180,24 @@ export class AsyncImageStore {
   }
 
     /**
-     * Mount the Store, restoring cache metadata from storage.
+     * **Asynchronously** mount the Store, restoring cache metadata from storage.
      * 
      * **Suggestion**: Mount this Store during your application initialization, ideally in the root component, where you can display a splashscreen or an activity indicator while
-     * it happens.
+     * it happens. Good hook candidates are `componentWillMount` and `componentDidMount`, **which you can declare `async`**.
      */
   public async mount(): Promise<void> {
-    await this.state.mount()
+    const registry = await this.storage.load()
+    await this.state.mount(registry)
+    this.state.addRegistryUpdateListener(this.storage.save.bind(this))
     this.mounted = true
   }
 
     /**
-     * Release the Store.
+     * **Asynchronously** release the Store from memory.
      * 
      * **Suggestion**: Unmount the Store in your root component, in `componentWillUnmount` method, **which you can declare `async`**.
      * 
-     * **Info**: Carefully consuming lifecycle methods is mandatory to prevent memory leaks. Note that cache metadata is persisted on change.
+     * **Info**: Carefully consuming lifecycle methods is mandatory to prevent memory leaks. Note that **cache metadata is persisted on change**.
      */
   public async unmount(): Promise<void> {
     this.assertMountInvariant()
@@ -212,7 +237,7 @@ export class AsyncImageStore {
   }
 
     /**
-     * Asynchronously preload the provided image to Store.
+     * **Asynchronously**  preload the provided image to Store.
      * 
      * **Info** This function will revalidate an image which has already been preloaded, and download unconditionnaly otherwise.
      * 
@@ -226,7 +251,7 @@ export class AsyncImageStore {
   }
 
     /**
-     * Asynchronously preload the list of images to Store.
+     * **Asynchronously**  preload the list of images to Store.
      * 
      * **Info** This function will revalidate images which are already preloaded, and download the others.
      * 
@@ -243,7 +268,7 @@ export class AsyncImageStore {
   }
 
     /**
-     * Delete an existing image from the Store.
+     * **Asynchronously** delete an existing image from the Store.
      * Does nothing if the provided URI have no matching entry in Store.
      * 
      * @param target 
@@ -255,7 +280,7 @@ export class AsyncImageStore {
   }
 
     /**
-     * Delete all images from the Store.
+     * **Asynchronously** delete all images from the Store.
      */
   public async deleteAllImages(): Promise<URIEvent[]> {
     this.assertMountInvariant()
@@ -263,7 +288,7 @@ export class AsyncImageStore {
   }
 
     /**
-     * Delete all image which are stale from the Store.
+     * **Asynchronously** delete all image which are stale from the Store.
      */
   public async deleteAllStaleImages(): Promise<URIEvent[]> {
     this.assertMountInvariant()
@@ -271,7 +296,7 @@ export class AsyncImageStore {
   }
 
     /**
-     * Asynchronously revalidate a stored image:
+     * **Asynchronously** revalidate a stored image:
      * 
      * - **if it was previously registered** and
      * - **if it is staled**
@@ -294,7 +319,7 @@ export class AsyncImageStore {
   }
 
     /**
-     * Revalidate all stale images in the store.
+     * **Asynchronously** revalidate all stale images in the store.
      *
      * **Info**: Revalidation is done with:
      * 
@@ -305,12 +330,45 @@ export class AsyncImageStore {
     this.assertMountInvariant()
     return this.dispatchCommandWhen('REVALIDATE', (s => s.fileState === 'STALE'))
   }
+
+  /**
+   * **Asynchronously** clear and **unmount** the store. This method:
+   * 
+   * - delete all registered images files from filesystem
+   * - clear metadata from storage
+   * - delete containing folder from filesystem
+   * - unmount the store
+   * 
+   * **Warning**: This method will wipe out all images registered with this library.
+   */
+  public async clear(): Promise<void> {
+    await this.deleteAllImages()
+    await this.state.unmount()
+    await this.storage.clear()
+    await this.fetcher.deleteCacheRoot()
+    await this.unmount()
+  }
 }
 
+/**
+ * Get store by name, if exists.
+ * 
+ * @param name 
+ */
 export function getStoreByName(name: string): AsyncImageStore|null {
   return storesMap.get(name) || null
 }
 
+/**
+ * Create a store from a unique name, which will be used as directory.
+ * 
+ * **Warning**: Can be called once only. Use `getStoreByName` instead if you're looking for an instance.
+ * 
+ * @param name The unique name.
+ * @param userConfig See config structure in the type definition of `AsyncImageStoreConfig`
+ * @see AsyncImageStoreConfig
+ * @see getStoreByName
+ */
 export function createStore(name: string, userConfig?: AsyncImageStoreConfig) {
   return new AsyncImageStore(name, userConfig || {})
 }

@@ -1,23 +1,23 @@
-import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener, URIPatch } from './types';
+import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener, URIPatch, URICacheRegistry } from './types';
 export declare type ProposeFunction = (patch: Partial<URICacheModel>) => void;
 export declare type Reactor = (event: URIEvent, propose: ProposeFunction, payload?: any) => Promise<void>;
-export interface URICacheRegistry {
-    [uri: string]: URICacheModel;
-}
+export declare type RegistryUpdateListener = (reg: URICacheRegistry) => Promise<void>;
 export interface CacheStore {
     networkAvailable: boolean;
-    uriStates: URICacheRegistry;
+    registry: URICacheRegistry;
 }
 export declare function deriveFileStateFromModel(model: URICacheModel): URICacheFileState;
 export declare function deriveSyncStateFromModel(model: URICacheModel): URICacheSyncState;
 export declare function getURIStateFromModel(model: URICacheModel, networkAvailable: boolean): URICacheState;
 export declare function getInitialURICacheModel(uri: string): URICacheModel;
 export declare class State {
+    private name;
     private reactors;
     private listeners;
     private lastEvents;
+    private registryListener;
     private cacheStore;
-    constructor();
+    constructor(name: string);
     private getListenersForURI;
     private notifyURIListeners;
     private getURILens;
@@ -26,6 +26,14 @@ export declare class State {
      * @param uri Initialize the URI model if unregistered.
      */
     initURIModel(uri: string): void;
+    /**
+     * Add a hook on registry updates.
+     *
+     * **Info**: updates are debounced every 400ms, and limitted to one running promise per listener.
+     *
+     * @param listener
+     */
+    addRegistryUpdateListener(listener: RegistryUpdateListener): void;
     /**
      * Asynchronously update the given URI model.
      *
@@ -82,6 +90,6 @@ export declare class State {
      * @param predicate
      */
     dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any): Promise<URIEvent[]>;
-    mount(): Promise<void>;
+    mount(initialRegistry: URICacheRegistry | null): Promise<void>;
     unmount(): Promise<void>;
 }

@@ -11,7 +11,7 @@ describe('State class', () => {
       const initialModel = getInitialURICacheModel(uri)
       const state = new State()
       state.updateURIModel(uri, initialModel)
-      const model = state['cacheStore'].uriStates[uri]
+      const model = state['cacheStore'].registry[uri]
       expect(model).not.toBeNull()
       expect(model).toEqual(initialModel)
     })

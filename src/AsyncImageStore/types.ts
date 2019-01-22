@@ -24,7 +24,27 @@ export interface AsyncImageStoreConfig {
      * **Default**: `undefined` (don't override)
      */
   overrideMaxAge?: number
+  /**
+   * A `class` which produces `StorageInterface` instances.
+   * This class is used to instanciate a storage instance which get called to persist meta-info updates.
+   * 
+   * **Default**: The default implementation uses `AsyncStorage`
+   * 
+   * @see StorageInstance
+   * @see StorageConstructor
+   * @see URICacheRegistry
+   * 
+   */
+  Storage?: StorageConstructor<any>
 }
+
+export interface StorageInstance {
+  load(): Promise<URICacheRegistry|null>
+  save(registry: URICacheRegistry): Promise<void>
+  clear(): Promise<void>
+}
+
+export type StorageConstructor<C extends StorageInstance = StorageInstance> = new(name: string) => C
 
 export interface HTTPHeaders {
   [n: string]: string
@@ -77,4 +97,8 @@ export interface URICacheState {
   fileState: URICacheFileState
   syncState: URICacheSyncState
   networkState: CacheNetworkState
+}
+
+export interface URICacheRegistry {
+  [uri: string]: URICacheModel
 }

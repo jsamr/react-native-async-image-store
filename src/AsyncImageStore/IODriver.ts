@@ -25,7 +25,7 @@ function expiryFromMaxAge(maxAge_s: number): number {
   return maxAge_s * 1000 + new Date().getTime()
 }
 
-export class Fetcher {
+export class IODriver {
 
   private fileLocator: FileLocator
   constructor(name: string, private config: AsyncImageStoreConfig) {
@@ -61,13 +61,11 @@ export class Fetcher {
       const contentType = headers['cache-control'] || headers['Cache-Control']
       const directives = contentType.split(',')
       for (const dir of directives) {
-                // console.info('DIRECTIVE', dir)
         const match = /^max-age=(.*)/.exec(dir)
         if (match) {
           const [ _, group] = match
           const maxAge_s = Number(group)
           if (!isNaN(maxAge_s)) {
-            console.info('FOUND MAX AGE', maxAge_s)
             return expiryFromMaxAge(maxAge_s)
           }
         }
@@ -120,5 +118,9 @@ export class Fetcher {
 
   public async deleteImage({ uri }: ImageSource): Promise<void> {
     return RNFetchBlob.fs.unlink(this.fileLocator.getURIFilename(uri))
+  }
+
+  public async deleteCacheRoot(): Promise<void> {
+    return RNFetchBlob.fs.unlink(this.fileLocator.baseDir)
   }
 }

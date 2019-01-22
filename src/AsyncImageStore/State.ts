@@ -1,18 +1,17 @@
-import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch } from './types'
+import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch, URICacheRegistry } from './types'
 import { mergePath } from 'ramda-adjunct'
 import { lensPath, lensProp, set, equals, view, partial } from 'ramda'
+import debouncePromise from 'awesome-debounce-promise'
 
 export type ProposeFunction = (patch: Partial<URICacheModel>) => void
 
 export type Reactor = (event: URIEvent, propose: ProposeFunction, payload?: any) => Promise<void>
 
-export interface URICacheRegistry {
-  [uri: string]: URICacheModel
-}
+export type RegistryUpdateListener = (reg: URICacheRegistry) => Promise<void>
 
 export interface CacheStore {
   networkAvailable: boolean
-  uriStates: URICacheRegistry
+  registry: URICacheRegistry
 }
 
 export function deriveFileStateFromModel(model: URICacheModel): URICacheFileState {
@@ -61,12 +60,13 @@ export class State {
   private reactors: Map<string, Reactor> = new Map()
   private listeners: Map<string, Set<URIEventListener>> = new Map()
   private lastEvents: Map<string, URIEvent> = new Map()
+  private registryListener: Set<RegistryUpdateListener> = new Set()
   private cacheStore: CacheStore = {
     networkAvailable: true,
-    uriStates: {}
+    registry: {}
   }
 
-  constructor() {
+  constructor(private name: string) {
     this.updateURIModel = this.updateURIModel.bind(this)
     this.updateNetworkModel = this.updateNetworkModel.bind(this)
   }
@@ -92,6 +92,9 @@ export class State {
     for (const listener of listeners) {
       const resp = listener(nextEvent)
       resp && await resp
+    }
+    for (const listener of this.registryListener) {
+      await listener(this.cacheStore.registry)
     }
   }
 
@@ -120,6 +123,18 @@ export class State {
   }
 
   /**
+   * Add a hook on registry updates.
+   * 
+   * **Info**: updates are debounced every 400ms, and limitted to one running promise per listener.
+   * 
+   * @param listener 
+   */
+  public addRegistryUpdateListener(listener: RegistryUpdateListener) {
+    const debouncedListener = debouncePromise(listener, 400, { key: () => this.name })
+    this.registryListener.add(debouncedListener)
+  }
+
+  /**
    * Asynchronously update the given URI model.
    * 
    * @param uri
@@ -142,7 +157,7 @@ export class State {
     if (networkAvailable !== this.cacheStore.networkAvailable) {
       this.cacheStore = set(networkLens, networkAvailable, this.cacheStore)
       // tslint:disable-next-line:forin
-      for (const uri in Object.keys(this.cacheStore.uriStates)) {
+      for (const uri in Object.keys(this.cacheStore.registry)) {
         const lens = this.getURILens(uri)
         const actual = view(lens, this.cacheStore) as URICacheModel
         await this.notifyURIListeners(uri, actual, 'NETWORK_UPDATE')
@@ -225,7 +240,7 @@ export class State {
      */
   public async dispatchCommandToAll(commandType: URICommandType, payload?: any): Promise<URIEvent[]> {
     const events: URIEvent[] = []
-    for (const uri of Object.getOwnPropertyNames(this.cacheStore.uriStates)) {
+    for (const uri of Object.getOwnPropertyNames(this.cacheStore.registry)) {
       events.push(await this.dispatchCommand(uri, commandType, payload))
     }
     return events
@@ -246,13 +261,17 @@ export class State {
     return events
   }
 
-  public async mount(): Promise<void> {
-        //
+  public async mount(initialRegistry: URICacheRegistry|null): Promise<void> {
+    if (initialRegistry) {
+      console.info('Found initial registry:', initialRegistry)
+      this.cacheStore.registry = initialRegistry
+    }
   }
 
   public async unmount(): Promise<void> {
     for (const [_uri, listener] of this.listeners) {
       listener.clear()
     }
+    this.registryListener.clear()
   }
 }
