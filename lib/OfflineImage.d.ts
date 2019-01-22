@@ -51,9 +51,9 @@ export declare class OfflineImage<C extends ImageProps = ImageProps> extends Pur
     private onCacheEvent;
     private registerListener;
     private unregisterListener;
-    componentWillMount(): void;
+    componentWillMount(): Promise<void>;
     componentWillUnmount(): void;
-    componentWillReceiveProps(nextProps: OfflineImageProps<C>, nextState: State): void;
+    componentWillReceiveProps(nextProps: OfflineImageProps<C>, nextState: State): Promise<void>;
     render(): JSX.Element;
 }
 export {};

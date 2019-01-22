@@ -188,7 +188,7 @@ export class AsyncImageStore {
   public async mount(): Promise<void> {
     const registry = await this.storage.load()
     await this.state.mount(registry)
-    this.state.addRegistryUpdateListener(this.storage.save.bind(this))
+    this.state.addRegistryUpdateListener(this.storage.save.bind(this.storage))
     this.mounted = true
   }
 
@@ -369,6 +369,6 @@ export function getStoreByName(name: string): AsyncImageStore|null {
  * @see AsyncImageStoreConfig
  * @see getStoreByName
  */
-export function createStore(name: string, userConfig?: AsyncImageStoreConfig) {
+export function createStore(name: string, userConfig?: Partial<AsyncImageStoreConfig>) {
   return new AsyncImageStore(name, userConfig || {})
 }

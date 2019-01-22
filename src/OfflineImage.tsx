@@ -91,29 +91,29 @@ export class OfflineImage<C extends ImageProps = ImageProps> extends PureCompone
     }
   }
 
-  private registerListener(props: OfflineImageProps<C>) {
+  private async registerListener(props: OfflineImageProps<C>): Promise<void> {
     const event = this.store.addCacheUpdateListener(props.source.uri, this.onCacheEvent)
-    this.onCacheEvent(event)
+    await this.onCacheEvent(event)
   }
 
   private unregisterListener(props: OfflineImageProps<C>) {
     this.store.removeCacheUpdateListener(props.source.uri, this.onCacheEvent)
   }
 
-  componentWillMount() {
-    this.registerListener(this.props)
+  async componentWillMount(): Promise<void> {
+    await this.registerListener(this.props)
   }
 
   componentWillUnmount() {
     this.unregisterListener(this.props)
   }
 
-  componentWillReceiveProps(nextProps: OfflineImageProps<C>, nextState: State) {
+  async componentWillReceiveProps(nextProps: OfflineImageProps<C>, nextState: State): Promise<void> {
     invariant(this.props.storeName === nextProps.storeName, 'OfflineImage: storeName prop cannot be set dynamically.')
     invariant(nextProps.source && nextProps.source.uri !== null, 'OfflineImage: the source prop must contain a `uri` field.')
     if (this.props.source.uri !== nextProps.source.uri) {
       this.unregisterListener(this.props)
-      this.registerListener(nextProps)
+      await this.registerListener(nextProps)
     }
     if (nextState.version !== this.state.version && nextState.syncState === 'IDLE_SUCCESS') {
       // Force update since local version has changed

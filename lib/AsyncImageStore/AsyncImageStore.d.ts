@@ -141,4 +141,4 @@ export declare function getStoreByName(name: string): AsyncImageStore | null;
  * @see AsyncImageStoreConfig
  * @see getStoreByName
  */
-export declare function createStore(name: string, userConfig?: AsyncImageStoreConfig): AsyncImageStore;
+export declare function createStore(name: string, userConfig?: Partial<AsyncImageStoreConfig>): AsyncImageStore;
