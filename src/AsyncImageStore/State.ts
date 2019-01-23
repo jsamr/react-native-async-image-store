@@ -263,7 +263,6 @@ export class State {
 
   public async mount(initialRegistry: URICacheRegistry|null): Promise<void> {
     if (initialRegistry) {
-      console.info('Found initial registry:', initialRegistry)
       this.cacheStore.registry = initialRegistry
     }
   }
