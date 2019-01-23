@@ -4,7 +4,7 @@ import invariant from 'invariant'
 import { AsyncImageStore, getStoreByName, URIEvent, ImageSource, URICacheFileState, URICacheSyncState } from './AsyncImageStore'
 
 export interface MinimalImageComponentProps {
-  source: ImageSourcePropType
+  source?: ImageSourcePropType
 }
 
 export type OfflineImageProps<C extends MinimalImageComponentProps = ImageProps> = {

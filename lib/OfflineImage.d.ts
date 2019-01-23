@@ -2,7 +2,7 @@ import { ComponentType, PureComponent } from 'react';
 import { ImageProps, ImageRequireSource, ImageSourcePropType } from 'react-native';
 import { ImageSource, URICacheFileState, URICacheSyncState } from './AsyncImageStore';
 export interface MinimalImageComponentProps {
-    source: ImageSourcePropType;
+    source?: ImageSourcePropType;
 }
 export declare type OfflineImageProps<C extends MinimalImageComponentProps = ImageProps> = {
     /**
