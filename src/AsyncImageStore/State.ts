@@ -156,8 +156,7 @@ export class State {
     const networkLens = lensProp('networkAvailable')
     if (networkAvailable !== this.cacheStore.networkAvailable) {
       this.cacheStore = set(networkLens, networkAvailable, this.cacheStore)
-      // tslint:disable-next-line:forin
-      for (const uri in Object.keys(this.cacheStore.registry)) {
+      for (const uri of Object.keys(this.cacheStore.registry)) {
         const lens = this.getURILens(uri)
         const actual = view(lens, this.cacheStore) as URICacheModel
         await this.notifyURIListeners(uri, actual, 'NETWORK_UPDATE')
