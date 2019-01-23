@@ -1,9 +1,13 @@
 import React, { ComponentType, PureComponent, Component } from 'react'
-import { ImageProps, Image, ImageRequireSource, ActivityIndicator } from 'react-native'
+import { ImageProps, Image, ImageRequireSource, ActivityIndicator, ImageSourcePropType } from 'react-native'
 import invariant from 'invariant'
 import { AsyncImageStore, getStoreByName, URIEvent, ImageSource, URICacheFileState, URICacheSyncState } from './AsyncImageStore'
 
-export type OfflineImageProps<C extends ImageProps = ImageProps> = {
+export interface MinimalImageComponentProps {
+  source: ImageSourcePropType
+}
+
+export type OfflineImageProps<C extends MinimalImageComponentProps = ImageProps> = {
     /**
      * Remote source to be cached locally.
      * Headers are passed for request creation.
@@ -47,7 +51,7 @@ interface State {
   networkAvailable: boolean
 }
 
-export class OfflineImage<C extends ImageProps = ImageProps> extends PureComponent<OfflineImageProps<C>, State> {
+export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> extends PureComponent<OfflineImageProps<C>, State> {
 
   private store: AsyncImageStore
   private ref?: Component<C>
@@ -122,9 +126,10 @@ export class OfflineImage<C extends ImageProps = ImageProps> extends PureCompone
   }
 
   render() {
-    const { source, ImageComponent = Image, LoadingIndicatorComponent = ActivityIndicator, fallbackStaticSource: fallbackSource, storeName, ...imageProps } = this.props
+    const { source, ImageComponent: Img = Image, LoadingIndicatorComponent = ActivityIndicator, fallbackStaticSource: fallbackSource, storeName, ...imageProps } = this.props
     const { fileState, syncState, localURI } = this.state
     const LoadingComponent = LoadingIndicatorComponent as ComponentType
+    const ImageComponent = Img as ComponentType<C>
     const loading = syncState === 'FETCHING' || syncState === 'REFRESHING'
     const displayFallback = fileState === 'UNAVAILABLE' || loading && !LoadingComponent
     if (displayFallback && fallbackSource) {

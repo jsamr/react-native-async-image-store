@@ -1,7 +1,10 @@
 import { ComponentType, PureComponent } from 'react';
-import { ImageProps, ImageRequireSource } from 'react-native';
+import { ImageProps, ImageRequireSource, ImageSourcePropType } from 'react-native';
 import { ImageSource, URICacheFileState, URICacheSyncState } from './AsyncImageStore';
-export declare type OfflineImageProps<C extends ImageProps = ImageProps> = {
+export interface MinimalImageComponentProps {
+    source: ImageSourcePropType;
+}
+export declare type OfflineImageProps<C extends MinimalImageComponentProps = ImageProps> = {
     /**
      * Remote source to be cached locally.
      * Headers are passed for request creation.
@@ -43,7 +46,7 @@ interface State {
     syncState: URICacheSyncState;
     networkAvailable: boolean;
 }
-export declare class OfflineImage<C extends ImageProps = ImageProps> extends PureComponent<OfflineImageProps<C>, State> {
+export declare class OfflineImage<C extends MinimalImageComponentProps = ImageProps> extends PureComponent<OfflineImageProps<C>, State> {
     private store;
     private ref?;
     constructor(props: OfflineImageProps<C>);
