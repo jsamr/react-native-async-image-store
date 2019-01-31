@@ -60,7 +60,7 @@ export class State {
   private reactors: Map<string, Reactor> = new Map()
   private listeners: Map<string, Set<URIEventListener>> = new Map()
   private lastEvents: Map<string, URIEvent> = new Map()
-  private registryListener: Set<RegistryUpdateListener> = new Set()
+  private registryListeners: Set<RegistryUpdateListener> = new Set()
   private cacheStore: CacheStore = {
     networkAvailable: true,
     registry: {}
@@ -93,13 +93,13 @@ export class State {
       const resp = listener(nextEvent)
       resp && await resp
     }
-    for (const listener of this.registryListener) {
+    for (const listener of this.registryListeners) {
       await listener(this.cacheStore.registry)
     }
   }
 
   private getURILens(uri: string) {
-    const path = ['uriStates', uri]
+    const path = ['registry', uri]
     return lensPath(path)
   }
 
@@ -130,8 +130,8 @@ export class State {
    * @param listener 
    */
   public addRegistryUpdateListener(listener: RegistryUpdateListener) {
-    const debouncedListener = debouncePromise(listener, 400, { key: () => this.name })
-    this.registryListener.add(debouncedListener)
+    // const debouncedListener = debouncePromise(listener, 400, { key: () => this.name })
+    this.registryListeners.add(listener)
   }
 
   /**
@@ -142,7 +142,7 @@ export class State {
    * @param type 
    */
   public async updateURIModel(uri: string, patch: URIPatch): Promise<void> {
-    const path = ['uriStates', uri]
+    const path = ['registry', uri]
     const uriLens = lensPath(path)
     const next: CacheStore = mergePath(path as any, patch, this.cacheStore) as CacheStore
     const viewURI = view(uriLens)
@@ -225,7 +225,7 @@ export class State {
     const reactor = this.reactors.get(commandType)
     const lastEvent = this.getLastURIEvent(uri)
     if (reactor) {
-      await reactor(lastEvent, partial(this.updateURIModel, [uri]) as any, payload)
+      await reactor(lastEvent, (...args) => this.updateURIModel(uri, ...args), payload)
       return this.getLastURIEvent(uri)
     }
     return lastEvent
@@ -263,6 +263,16 @@ export class State {
   public async mount(initialRegistry: URICacheRegistry|null): Promise<void> {
     if (initialRegistry) {
       this.cacheStore.registry = initialRegistry
+      for (const uri of Object.getOwnPropertyNames(initialRegistry)) {
+        const model = initialRegistry[uri]
+        const state = getURIStateFromModel(model, this.cacheStore.networkAvailable)
+        const event: URIEvent = {
+          nextModel: model,
+          nextState: state,
+          type: 'URI_INIT'
+        }
+        this.lastEvents.set(uri, event)
+      }
     }
   }
 
@@ -270,6 +280,6 @@ export class State {
     for (const [_uri, listener] of this.listeners) {
       listener.clear()
     }
-    this.registryListener.clear()
+    this.registryListeners.clear()
   }
 }

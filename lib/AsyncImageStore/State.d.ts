@@ -15,7 +15,7 @@ export declare class State {
     private reactors;
     private listeners;
     private lastEvents;
-    private registryListener;
+    private registryListeners;
     private cacheStore;
     constructor(name: string);
     private getListenersForURI;

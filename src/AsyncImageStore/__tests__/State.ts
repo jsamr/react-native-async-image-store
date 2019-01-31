@@ -1,8 +1,8 @@
 // tslint:disable:no-string-literal
 // tslint:disable:no-empty
 
-import { State, getInitialURICacheModel } from '../State'
-import { URIEvent } from '../types'
+import { State, Reactor } from '../State'
+import { URIEvent, URICacheRegistry } from '../types'
 
 describe('State class', () => {
   describe('updateURIModel method', () => {
@@ -64,6 +64,29 @@ describe('State class', () => {
       const state = new State('X')
       state.registerCommandReactor('PRELOAD', spy as any)
       await state.dispatchCommand(uri, 'PRELOAD')
+      expect(spy).toHaveBeenCalledTimes(1)
+    })
+  })
+  describe('registerRegistryUpdateListener method', () => {
+    it('should register a callback which gets called each time the registry updates with a new registry', async () => {
+      const uri = 'XXXX'
+      const spiedObject = {
+        async listener(registry: URICacheRegistry) {
+          expect(registry[uri]).toBeDefined()
+        }
+      }
+      const preloadCommandReactor: Reactor = async (event: URIEvent, propose) => {
+        propose({ fileExists: true })
+      }
+      const spy = jest.spyOn(spiedObject, 'listener')
+      const state = new State('X')
+      state.addRegistryUpdateListener(spy as any)
+      expect(state['registryListeners'].size).toBe(1)
+      async function listener() {}
+      state.addListener(uri, listener)
+      state.registerCommandReactor('PRELOAD', preloadCommandReactor)
+      await state.dispatchCommand(uri, 'PRELOAD')
+      expect(state['registryListeners'].size).toBe(1)
       expect(spy).toHaveBeenCalledTimes(1)
     })
   })
