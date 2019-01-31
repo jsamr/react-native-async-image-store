@@ -4,10 +4,10 @@ import invariant from 'invariant'
 import { AsyncImageStore, getStoreByName, URIEvent, ImageSource, URICacheFileState, URICacheSyncState } from './AsyncImageStore'
 
 export interface MinimalImageComponentProps {
-  source?: ImageSourcePropType
+  source: ImageSourcePropType
 }
 
-export type OfflineImageProps<C extends MinimalImageComponentProps = ImageProps> = {
+export interface OfflineImageProps {
   /**
    * Remote source to be cached locally.
    * Headers are passed for request creation.
@@ -26,7 +26,7 @@ export type OfflineImageProps<C extends MinimalImageComponentProps = ImageProps>
    * 
    * **Default**: `Image`.
    */
-  ImageComponent?: ComponentType<C>
+  ImageComponent?: ComponentType<MinimalImageComponentProps>
   /**
    * React Component (class or SFC) displayed while image is being fetched on network.
    * By default, `fallbackStaticSource` will be displayed during network requests, if provided.
@@ -35,7 +35,7 @@ export type OfflineImageProps<C extends MinimalImageComponentProps = ImageProps>
    * 
    * **Default**: `ActivityIndicator` or `ImageComponent` with `fallbackStaticSource` if present
    */
-  LoadingIndicatorComponent?: ComponentType<C>
+  LoadingIndicatorComponent?: ComponentType<MinimalImageComponentProps>
   /**
    * The fallback image location.
    * Must be a local require to be accessed offline.
@@ -57,7 +57,7 @@ export type OfflineImageProps<C extends MinimalImageComponentProps = ImageProps>
    * **Default**: `false`
    */
   staleWhileRevalidate?: boolean
-} & C
+}
 
 interface State {
   localURI: string
@@ -67,7 +67,7 @@ interface State {
   networkAvailable: boolean
 }
 
-export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> extends PureComponent<OfflineImageProps<C>, State> {
+export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> extends PureComponent<OfflineImageProps & C, State> {
 
   public static defaultProps: Partial<OfflineImageProps> = {
     reactive: false,
@@ -79,7 +79,7 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
   private store: AsyncImageStore
   private ref?: Component<C>
 
-  constructor(props: OfflineImageProps<C>) {
+  constructor(props: OfflineImageProps & C) {
     super(props)
     const store = getStoreByName(props.storeName)
     invariant(store !== null, `OfflineImage: no store named ${props.storeName} could be found.`)
@@ -118,12 +118,12 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
     }
   }
 
-  private async registerListener(props: OfflineImageProps<C>): Promise<void> {
+  private async registerListener(props: OfflineImageProps): Promise<void> {
     const event = this.store.addCacheUpdateListener(props.source.uri, this.onCacheEvent)
     await this.onCacheEvent(event)
   }
 
-  private unregisterListener(props: OfflineImageProps<C>) {
+  private unregisterListener(props: OfflineImageProps) {
     this.store.removeCacheUpdateListener(props.source.uri, this.onCacheEvent)
   }
 
@@ -135,7 +135,7 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
     this.unregisterListener(this.props)
   }
 
-  async componentWillReceiveProps(nextProps: OfflineImageProps<C>, nextState: State): Promise<void> {
+  async componentWillReceiveProps(nextProps: OfflineImageProps, nextState: State): Promise<void> {
     invariant(this.props.storeName === nextProps.storeName, 'OfflineImage: storeName prop cannot be set dynamically.')
     invariant(nextProps.source && nextProps.source.uri !== null, 'OfflineImage: the source prop must contain a `uri` field.')
     if (this.props.source.uri !== nextProps.source.uri) {

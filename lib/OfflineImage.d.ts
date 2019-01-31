@@ -2,9 +2,9 @@ import { ComponentType, PureComponent } from 'react';
 import { ImageProps, ImageRequireSource, ImageSourcePropType } from 'react-native';
 import { ImageSource, URICacheFileState, URICacheSyncState } from './AsyncImageStore';
 export interface MinimalImageComponentProps {
-    source?: ImageSourcePropType;
+    source: ImageSourcePropType;
 }
-export declare type OfflineImageProps<C extends MinimalImageComponentProps = ImageProps> = {
+export interface OfflineImageProps {
     /**
      * Remote source to be cached locally.
      * Headers are passed for request creation.
@@ -23,7 +23,7 @@ export declare type OfflineImageProps<C extends MinimalImageComponentProps = Ima
      *
      * **Default**: `Image`.
      */
-    ImageComponent?: ComponentType<C>;
+    ImageComponent?: ComponentType<MinimalImageComponentProps>;
     /**
      * React Component (class or SFC) displayed while image is being fetched on network.
      * By default, `fallbackStaticSource` will be displayed during network requests, if provided.
@@ -32,7 +32,7 @@ export declare type OfflineImageProps<C extends MinimalImageComponentProps = Ima
      *
      * **Default**: `ActivityIndicator` or `ImageComponent` with `fallbackStaticSource` if present
      */
-    LoadingIndicatorComponent?: ComponentType<C>;
+    LoadingIndicatorComponent?: ComponentType<MinimalImageComponentProps>;
     /**
      * The fallback image location.
      * Must be a local require to be accessed offline.
@@ -54,7 +54,7 @@ export declare type OfflineImageProps<C extends MinimalImageComponentProps = Ima
      * **Default**: `false`
      */
     staleWhileRevalidate?: boolean;
-} & C;
+}
 interface State {
     localURI: string;
     version: string;
@@ -62,18 +62,18 @@ interface State {
     syncState: URICacheSyncState;
     networkAvailable: boolean;
 }
-export declare class OfflineImage<C extends MinimalImageComponentProps = ImageProps> extends PureComponent<OfflineImageProps<C>, State> {
+export declare class OfflineImage<C extends MinimalImageComponentProps = ImageProps> extends PureComponent<OfflineImageProps & C, State> {
     static defaultProps: Partial<OfflineImageProps>;
     private store;
     private ref?;
-    constructor(props: OfflineImageProps<C>);
+    constructor(props: OfflineImageProps & C);
     private onRef;
     private onCacheEvent;
     private registerListener;
     private unregisterListener;
     componentWillMount(): Promise<void>;
     componentWillUnmount(): void;
-    componentWillReceiveProps(nextProps: OfflineImageProps<C>, nextState: State): Promise<void>;
+    componentWillReceiveProps(nextProps: OfflineImageProps, nextState: State): Promise<void>;
     render(): JSX.Element;
 }
 export {};
