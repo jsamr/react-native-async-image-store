@@ -38,6 +38,22 @@ export declare type OfflineImageProps<C extends MinimalImageComponentProps = Ima
      * Must be a local require to be accessed offline.
      */
     fallbackStaticSource?: ImageRequireSource;
+    /**
+     * When set to true, the image will stay in sync with the store state, after successful rendering.
+     * Which means that if you revalidate the image, the loading component will show instead, unless you
+     * set `staleWhileRevalidate` to true.
+     *
+     * **Default**: `false`
+     *
+     */
+    reactive?: boolean;
+    /**
+     * Show the old image during revalidation instead of the loading component.
+     * This only work with `reactive` set to true.
+     *
+     * **Default**: `false`
+     */
+    staleWhileRevalidate?: boolean;
 } & C;
 interface State {
     localURI: string;
@@ -47,6 +63,7 @@ interface State {
     networkAvailable: boolean;
 }
 export declare class OfflineImage<C extends MinimalImageComponentProps = ImageProps> extends PureComponent<OfflineImageProps<C>, State> {
+    static defaultProps: Partial<OfflineImageProps>;
     private store;
     private ref?;
     constructor(props: OfflineImageProps<C>);

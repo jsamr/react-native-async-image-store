@@ -20,8 +20,8 @@
   ],
   "devDependencies": {
     "@types/invariant": "^2.2.29",
-    "@types/ramda": "^0.25.47",
     "@types/jest": "^23.3.13",
+    "@types/ramda": "^0.25.47",
     "ts-essentials": "^1.0.2",
     "tslint": "^5.12.1",
     "tslint-config-airbnb": "^5.11.1",
@@ -30,14 +30,15 @@
     "typescript": "^3.2.4"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "install-peer": "yarn add --peer react react-native rn-fetch-blob @types/react-native @types/react"
   },
   "peerDependencies": {
     "@types/react": "*",
     "@types/react-native": "*",
     "react": "*",
     "react-native": "*",
-    "rn-fetch-blob": "^0.10"
+    "rn-fetch-blob": "^0.10.0"
   },
   "dependencies": {
     "awesome-debounce-promise": "^1.0.0",
