@@ -1,13 +1,14 @@
 import React, { ComponentType, PureComponent, Component } from 'react'
-import { ImageProps, Image, ImageRequireSource, ActivityIndicator, ImageSourcePropType } from 'react-native'
+import { ImageProps, Image, ImageRequireSource, ActivityIndicator, ImageSourcePropType, StyleProp } from 'react-native'
 import invariant from 'invariant'
 import { AsyncImageStore, getStoreByName, URIEvent, ImageSource, URICacheFileState, URICacheSyncState } from './AsyncImageStore'
 
 export interface MinimalImageComponentProps {
-  source: ImageSourcePropType
+  source?: ImageSourcePropType
+  style?: StyleProp<any>
 }
 
-export interface OfflineImageProps {
+export type OfflineImageProps<C extends MinimalImageComponentProps> = {
   /**
    * Remote source to be cached locally.
    * Headers are passed for request creation.
@@ -57,7 +58,11 @@ export interface OfflineImageProps {
    * **Default**: `false`
    */
   staleWhileRevalidate?: boolean
-}
+  /**
+   * The style prop send to the `ImageComponent`.
+   */
+  style?: StyleProp<any>
+} & Pick<C, Exclude<keyof C, 'source' | 'style'>>
 
 interface State {
   localURI: string
@@ -67,19 +72,19 @@ interface State {
   networkAvailable: boolean
 }
 
-export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> extends PureComponent<OfflineImageProps & C, State> {
+export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> extends PureComponent<OfflineImageProps<C>, State> {
 
-  public static defaultProps: Partial<OfflineImageProps> = {
+  public static defaultProps: Partial<OfflineImageProps<ImageProps>> = {
     reactive: false,
     staleWhileRevalidate: false,
-    ImageComponent: Image,
+    ImageComponent: Image as any,
     LoadingIndicatorComponent: ActivityIndicator as any
   }
 
   private store: AsyncImageStore
   private ref?: Component<C>
 
-  constructor(props: OfflineImageProps & C) {
+  constructor(props: OfflineImageProps<C>) {
     super(props)
     const store = getStoreByName(props.storeName)
     invariant(store !== null, `OfflineImage: no store named ${props.storeName} could be found.`)
@@ -118,12 +123,12 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
     }
   }
 
-  private async registerListener(props: OfflineImageProps): Promise<void> {
+  private async registerListener(props: OfflineImageProps<any>): Promise<void> {
     const event = this.store.addCacheUpdateListener(props.source.uri, this.onCacheEvent)
     await this.onCacheEvent(event)
   }
 
-  private unregisterListener(props: OfflineImageProps) {
+  private unregisterListener(props: OfflineImageProps<any>) {
     this.store.removeCacheUpdateListener(props.source.uri, this.onCacheEvent)
   }
 
@@ -135,7 +140,7 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
     this.unregisterListener(this.props)
   }
 
-  async componentWillReceiveProps(nextProps: OfflineImageProps, nextState: State): Promise<void> {
+  async componentWillReceiveProps(nextProps: OfflineImageProps<C>, nextState: State): Promise<void> {
     invariant(this.props.storeName === nextProps.storeName, 'OfflineImage: storeName prop cannot be set dynamically.')
     invariant(nextProps.source && nextProps.source.uri !== null, 'OfflineImage: the source prop must contain a `uri` field.')
     if (this.props.source.uri !== nextProps.source.uri) {
@@ -149,16 +154,24 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
   }
 
   render() {
-    const { source, ImageComponent = Image as any, LoadingIndicatorComponent = ActivityIndicator as any, fallbackStaticSource, storeName, staleWhileRevalidate, ...imageProps } = this.props
+    const {
+      source,
+      ImageComponent = Image as ComponentType<any>,
+      LoadingIndicatorComponent = ActivityIndicator as ComponentType<any>,
+      fallbackStaticSource,
+      storeName,
+      staleWhileRevalidate,
+      ...imageProps
+    } = this.props
     const { fileState, syncState, localURI } = this.state
     const loading = syncState === 'FETCHING' || (syncState === 'REFRESHING' && !staleWhileRevalidate)
     const displayFallback = fileState === 'UNAVAILABLE' && !loading
     if (displayFallback && fallbackStaticSource) {
-      return <ImageComponent source={fallbackStaticSource} {...imageProps as C} />
+      return React.createElement(ImageComponent, { source: fallbackStaticSource, ...imageProps })
     }
     if (loading || displayFallback) {
-      return <LoadingIndicatorComponent {...imageProps} />
+      return React.createElement(LoadingIndicatorComponent, imageProps)
     }
-    return <ImageComponent source={{ uri: localURI }} ref={this.onRef} {...imageProps as C} />
+    return React.createElement(ImageComponent, { source: { uri: localURI }, ref: this.onRef, ...imageProps })
   }
 }
