@@ -1,7 +1,8 @@
 import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch, URICacheRegistry } from './types'
 import { mergePath } from 'ramda-adjunct'
 import { lensPath, lensProp, set, equals, view, assocPath } from 'ramda'
-import debouncePromise from 'awesome-debounce-promise'
+import plimit from 'p-limit'
+import pthrottle from 'p-throttle'
 
 export type ProposeFunction = (patch: Partial<URICacheModel>|null) => void
 
@@ -61,6 +62,8 @@ export class State {
   private listeners: Map<string, Set<URIEventListener>> = new Map()
   private lastEvents: Map<string, URIEvent> = new Map()
   private registryListeners: Set<RegistryUpdateListener> = new Set()
+  private limit: any
+
   private cacheStore: CacheStore = {
     networkAvailable: true,
     registry: {}
@@ -69,6 +72,10 @@ export class State {
   constructor(private name: string) {
     this.updateURIModel = this.updateURIModel.bind(this)
     this.updateNetworkModel = this.updateNetworkModel.bind(this)
+    this.limit = plimit(1)
+    // Throttle dispatch commands to prevent I/O and CPU obstruction
+    // 10 operations / second seems like a sane limit
+    this.dispatchCommand = pthrottle(this.dispatchCommand.bind(this), 10, 1000)
   }
 
   private getListenersForURI(uri: string) {
@@ -94,7 +101,9 @@ export class State {
       resp && await resp
     }
     for (const listener of this.registryListeners) {
-      await listener(this.cacheStore.registry)
+      // Calls are limited to one after the other, preventing parallel
+      // Storage.save calls.
+      await this.limit(listener, this.cacheStore.registry)
     }
   }
 
@@ -130,8 +139,8 @@ export class State {
    * @param listener 
    */
   public addRegistryUpdateListener(listener: RegistryUpdateListener) {
-    // const debouncedListener = debouncePromise(listener, 400, { key: () => this.name })
-    this.registryListeners.add(listener)
+    const debouncedListener = listener
+    this.registryListeners.add(debouncedListener)
   }
 
   /**
