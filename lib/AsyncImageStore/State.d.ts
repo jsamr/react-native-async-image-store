@@ -10,13 +10,13 @@ export declare function deriveFileStateFromModel(model: URICacheModel): URICache
 export declare function deriveSyncStateFromModel(model: URICacheModel): URICacheSyncState;
 export declare function getURIStateFromModel(model: URICacheModel | null, networkAvailable: boolean): URICacheState;
 export declare function getInitialURICacheModel(uri: string): URICacheModel;
+export declare const DEBOUNCE_DELAY = 500;
 export declare class State {
     private name;
     private reactors;
     private listeners;
     private lastEvents;
     private registryListeners;
-    private limit;
     private cacheStore;
     constructor(name: string);
     private getListenersForURI;

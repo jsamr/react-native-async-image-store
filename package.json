@@ -41,12 +41,12 @@
     "rn-fetch-blob": "^0.10.15"
   },
   "dependencies": {
-    "@types/p-limit": "^2.0.0",
+    "@types/p-debounce": "^1.0.0",
     "@types/p-throttle": "^1.1.0",
     "buffer": "^5.2.1",
     "invariant": "^2.2.4",
     "jest": "^23.6.0",
-    "p-limit": "^2.1.0",
+    "p-debounce": "^1.0.0",
     "p-throttle": "^2.1.0",
     "ramda": "^0.26.1",
     "ramda-adjunct": "^2.13.0",

@@ -1,7 +1,7 @@
 // tslint:disable:no-string-literal
 // tslint:disable:no-empty
 
-import { State, Reactor } from '../State'
+import { State, Reactor, DEBOUNCE_DELAY } from '../State'
 import { URIEvent, URICacheRegistry } from '../types'
 
 describe('State class', () => {
@@ -92,7 +92,7 @@ describe('State class', () => {
       state.addListener(uri, listener)
       state.registerCommandReactor('PRELOAD', preloadCommandReactor)
       await state.dispatchCommand(uri, 'PRELOAD')
-      await new Promise(res => setTimeout(res, 500))
+      await new Promise(res => setTimeout(res, DEBOUNCE_DELAY))
       expect(state['registryListeners'].size).toBe(1)
       expect(spy).toHaveBeenCalled()
     })

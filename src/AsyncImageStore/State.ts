@@ -1,7 +1,7 @@
 import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch, URICacheRegistry } from './types'
 import { mergePath } from 'ramda-adjunct'
 import { lensPath, lensProp, set, equals, view, assocPath } from 'ramda'
-import plimit from 'p-limit'
+import pdebounce from 'p-debounce'
 import pthrottle from 'p-throttle'
 
 export type ProposeFunction = (patch: Partial<URICacheModel>|null) => void
@@ -57,12 +57,13 @@ export function getInitialURICacheModel(uri: string): URICacheModel {
   }
 }
 
+export const DEBOUNCE_DELAY = 500
+
 export class State {
   private reactors: Map<string, Reactor> = new Map()
   private listeners: Map<string, Set<URIEventListener>> = new Map()
   private lastEvents: Map<string, URIEvent> = new Map()
   private registryListeners: Set<RegistryUpdateListener> = new Set()
-  private limit: any
 
   private cacheStore: CacheStore = {
     networkAvailable: true,
@@ -72,7 +73,6 @@ export class State {
   constructor(private name: string) {
     this.updateURIModel = this.updateURIModel.bind(this)
     this.updateNetworkModel = this.updateNetworkModel.bind(this)
-    this.limit = plimit(1)
     // Throttle dispatch commands to prevent I/O and CPU obstruction
     // 10 operations / second seems like a sane limit
     this.dispatchCommand = pthrottle(this.dispatchCommand.bind(this), 10, 1000)
@@ -103,7 +103,7 @@ export class State {
     for (const listener of this.registryListeners) {
       // Calls are limited to one after the other, preventing parallel
       // Storage.save calls.
-      await this.limit(listener, this.cacheStore.registry)
+      await listener(this.cacheStore.registry)
     }
   }
 
@@ -139,7 +139,7 @@ export class State {
    * @param listener 
    */
   public addRegistryUpdateListener(listener: RegistryUpdateListener) {
-    const debouncedListener = listener
+    const debouncedListener = pdebounce(listener, DEBOUNCE_DELAY)
     this.registryListeners.add(debouncedListener)
   }
 
