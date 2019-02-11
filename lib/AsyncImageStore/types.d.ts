@@ -56,7 +56,7 @@ export interface URIVersionTag {
 }
 export declare type URICommandType = 'PRELOAD' | 'REVALIDATE' | 'DELETE';
 export declare type URICacheFileState = 'UNAVAILABLE' | 'FRESH' | 'STALE';
-export declare type URICacheSyncState = 'IDLE_SUCCESS' | 'IDLE_ERROR' | 'FETCHING' | 'REFRESHING';
+export declare type URICacheSyncState = 'IDLE_SUCCESS' | 'IDLE_ERROR' | 'FETCHING' | 'REFRESHING' | 'DELETED';
 export declare type CacheNetworkState = 'AVAILABLE' | 'UNAVAILABLE';
 export interface URICacheModel {
     uri: string;

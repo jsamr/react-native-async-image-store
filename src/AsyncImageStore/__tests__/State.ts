@@ -15,6 +15,12 @@ describe('State class', () => {
       expect(event.nextModel.fileExists).toEqual(true)
       expect(event.nextModel.fetching).toEqual(false)
     })
+    it('should handle null values', async () => {
+      const uri = 'XXXX'
+      const state = new State('X')
+      await state.updateURIModel(uri, null)
+      expect(state['cacheStore'].registry[uri]).toBeNull()
+    })
   })
   describe('addListener method', () => {
     it('should initialize URI model', async () => {

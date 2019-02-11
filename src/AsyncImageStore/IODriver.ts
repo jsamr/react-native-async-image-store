@@ -117,10 +117,14 @@ export class IODriver {
   }
 
   public async deleteImage({ uri }: ImageSource): Promise<void> {
-    return RNFetchBlob.fs.unlink(this.fileLocator.getURIFilename(uri))
+    return RNFetchBlob.fs
+      .unlink(this.fileLocator.getURIFilename(uri))
+      .catch(console.error.bind(console))
   }
 
   public async deleteCacheRoot(): Promise<void> {
-    return RNFetchBlob.fs.unlink(this.fileLocator.baseDir)
+    return RNFetchBlob.fs
+      .unlink(this.fileLocator.baseDir)
+      .catch(console.error.bind(console))
   }
 }

@@ -145,7 +145,7 @@ export class AsyncImageStore {
   }
 
   private async onDelete(event: URIEvent, propose: ProposeFunction) {
-    propose({ fileExists: false })
+    propose(null)
     await this.fetcher.deleteImage(event.nextModel)
   }
 

@@ -1,9 +1,9 @@
 import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch, URICacheRegistry } from './types'
 import { mergePath } from 'ramda-adjunct'
-import { lensPath, lensProp, set, equals, view, partial } from 'ramda'
+import { lensPath, lensProp, set, equals, view, assocPath } from 'ramda'
 import debouncePromise from 'awesome-debounce-promise'
 
-export type ProposeFunction = (patch: Partial<URICacheModel>) => void
+export type ProposeFunction = (patch: Partial<URICacheModel>|null) => void
 
 export type Reactor = (event: URIEvent, propose: ProposeFunction, payload?: any) => Promise<void>
 
@@ -34,10 +34,10 @@ export function deriveSyncStateFromModel(model: URICacheModel): URICacheSyncStat
   return model.error ? 'IDLE_ERROR' : 'IDLE_SUCCESS'
 }
 
-export function getURIStateFromModel(model: URICacheModel, networkAvailable: boolean): URICacheState {
+export function getURIStateFromModel(model: URICacheModel|null, networkAvailable: boolean): URICacheState {
   return {
-    fileState: deriveFileStateFromModel(model),
-    syncState: deriveSyncStateFromModel(model),
+    fileState: model ? deriveFileStateFromModel(model) : 'UNAVAILABLE',
+    syncState: model ? deriveSyncStateFromModel(model) : 'DELETED',
     networkState: networkAvailable ? 'AVAILABLE' : 'UNAVAILABLE'
   }
 }
@@ -141,11 +141,13 @@ export class State {
    * @param patch 
    * @param type 
    */
-  public async updateURIModel(uri: string, patch: URIPatch): Promise<void> {
+  public async updateURIModel(uri: string, patch: URIPatch|null): Promise<void> {
     const path = ['registry', uri]
     const uriLens = lensPath(path)
-    const next: CacheStore = mergePath(path as any, patch, this.cacheStore) as CacheStore
     const viewURI = view(uriLens)
+    const next: CacheStore = patch ?
+        mergePath(path as any, patch, this.cacheStore) as CacheStore :
+        assocPath(path, null, this.cacheStore)
     if (!equals(viewURI(next), viewURI(this.cacheStore))) {
       this.cacheStore = next
       await this.notifyURIListeners(uri, viewURI(next) as URICacheModel)

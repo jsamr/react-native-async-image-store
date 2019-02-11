@@ -1,5 +1,5 @@
 import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener, URIPatch, URICacheRegistry } from './types';
-export declare type ProposeFunction = (patch: Partial<URICacheModel>) => void;
+export declare type ProposeFunction = (patch: Partial<URICacheModel> | null) => void;
 export declare type Reactor = (event: URIEvent, propose: ProposeFunction, payload?: any) => Promise<void>;
 export declare type RegistryUpdateListener = (reg: URICacheRegistry) => Promise<void>;
 export interface CacheStore {
@@ -8,7 +8,7 @@ export interface CacheStore {
 }
 export declare function deriveFileStateFromModel(model: URICacheModel): URICacheFileState;
 export declare function deriveSyncStateFromModel(model: URICacheModel): URICacheSyncState;
-export declare function getURIStateFromModel(model: URICacheModel, networkAvailable: boolean): URICacheState;
+export declare function getURIStateFromModel(model: URICacheModel | null, networkAvailable: boolean): URICacheState;
 export declare function getInitialURICacheModel(uri: string): URICacheModel;
 export declare class State {
     private name;
@@ -41,7 +41,7 @@ export declare class State {
      * @param patch
      * @param type
      */
-    updateURIModel(uri: string, patch: URIPatch): Promise<void>;
+    updateURIModel(uri: string, patch: URIPatch | null): Promise<void>;
     updateNetworkModel(networkAvailable: boolean): Promise<void>;
     /**
      * Register a function which will be called when an event is dispatched to a specific URI.

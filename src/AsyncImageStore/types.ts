@@ -64,7 +64,7 @@ export type URICommandType = 'PRELOAD' | 'REVALIDATE' | 'DELETE'
 
 export type URICacheFileState = 'UNAVAILABLE' | 'FRESH' | 'STALE'
 
-export type URICacheSyncState = 'IDLE_SUCCESS' | 'IDLE_ERROR' | 'FETCHING' | 'REFRESHING'
+export type URICacheSyncState = 'IDLE_SUCCESS' | 'IDLE_ERROR' | 'FETCHING' | 'REFRESHING' | 'DELETED'
 
 export type CacheNetworkState = 'AVAILABLE' | 'UNAVAILABLE'
 
