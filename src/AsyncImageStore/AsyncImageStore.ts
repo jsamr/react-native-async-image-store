@@ -190,16 +190,17 @@ export class AsyncImageStore {
   }
 
   /**
-   * **Asynchronously** release the Store from memory.
+   * **Asynchronously** release the Store from memory and persists its state.
    * 
    * **Suggestion**: Unmount the Store in your root component, in `componentWillUnmount` method, **which you can declare `async`**.
    * 
    * **Info**: Carefully consuming lifecycle methods is mandatory to prevent memory leaks. Note that **cache metadata is persisted on change**.
    */
   public async unmount(): Promise<void> {
-    this.assertMountInvariant()
-    this.mounted = false
-    await this.state.unmount()
+    if (this.mounted) {
+      this.mounted = false
+      await this.state.unmount()
+    }
   }
 
     /**
@@ -359,18 +360,17 @@ export class AsyncImageStore {
   /**
    * **Asynchronously** clear and **unmount** the store. This method:
    * 
-   * - delete all registered images files from filesystem
    * - unmount the store
    * - clear metadata from storage
-   * - delete containing folder from filesystem
+   * - delete store root folder from filesystem
    * 
    * **Warning**: This method will wipe out all images registered with this library.
    * 
-   * @param onProgress a callback to be invoked after each deletion
    */
-  public async clear(onProgress?: ProgressCallback): Promise<void> {
-    await this.deleteAllImages(onProgress)
-    await this.unmount()
+  public async clear(): Promise<void> {
+    if (this.mounted) {
+      await this.unmount()
+    }
     await this.storage.clear()
     await this.fetcher.deleteCacheRoot()
   }

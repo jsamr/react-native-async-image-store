@@ -25,7 +25,7 @@ export declare class AsyncImageStore {
      */
     mount(): Promise<void>;
     /**
-     * **Asynchronously** release the Store from memory.
+     * **Asynchronously** release the Store from memory and persists its state.
      *
      * **Suggestion**: Unmount the Store in your root component, in `componentWillUnmount` method, **which you can declare `async`**.
      *
@@ -136,16 +136,14 @@ export declare class AsyncImageStore {
     /**
      * **Asynchronously** clear and **unmount** the store. This method:
      *
-     * - delete all registered images files from filesystem
      * - unmount the store
      * - clear metadata from storage
-     * - delete containing folder from filesystem
+     * - delete store root folder from filesystem
      *
      * **Warning**: This method will wipe out all images registered with this library.
      *
-     * @param onProgress a callback to be invoked after each deletion
      */
-    clear(onProgress?: ProgressCallback): Promise<void>;
+    clear(): Promise<void>;
 }
 /**
  * Get store by name, if exists.
