@@ -1,19 +1,13 @@
 import invariant from 'invariant'
-import { AsyncImageStoreConfig, ImageSource, URIPatch, URIEvent, HTTPHeaders, URICacheState, URIEventListener, URICommandType, StorageConstructor, StorageInstance } from './types'
+import { AsyncImageStoreConfig, ImageSource, URIPatch, URIEvent, HTTPHeaders, URICacheState, URIEventListener, URICommandType, StorageInstance } from './types'
 import { IODriver, RequestReport } from './IODriver'
 import { Platform } from 'react-native'
 import { State, ProposeFunction } from './State'
-import { Storage } from './Storage'
+import { defaultConfig } from './default-config'
 
 export type Target = string|ImageSource
 
 const storesMap: Map<string, AsyncImageStore> = new Map()
-
-const defaultConfig = {
-  Storage: Storage as StorageConstructor,
-  debug: false,
-  defaultMaxAge: 86000
-}
 
 const FILE_PREFIX = Platform.OS === 'ios' ? '' : 'file://'
 
@@ -73,7 +67,7 @@ export class AsyncImageStore {
     }
     this.config = config
     this.fetcher = new IODriver(name, config)
-    this.state = new State(name)
+    this.state = new State(name, config)
     this.storage = new config.Storage(name)
     this.state.registerCommandReactor('PRELOAD', this.onPreload.bind(this))
     this.state.registerCommandReactor('REVALIDATE', this.onRevalidate.bind(this))
@@ -179,26 +173,29 @@ export class AsyncImageStore {
     invariant(this.mounted, `${this.constructor.name} actions must be invoked after mounting occurs, but Store \`${this.name}' is unmounted.`)
   }
 
-    /**
-     * **Asynchronously** mount the Store, restoring cache metadata from storage.
-     * 
-     * **Suggestion**: Mount this Store during your application initialization, ideally in the root component, where you can display a splashscreen or an activity indicator while
-     * it happens. Good hook candidates are `componentWillMount` and `componentDidMount`, **which you can declare `async`**.
-     */
+  /**
+   * **Asynchronously** mount the Store, restoring cache metadata from storage.
+   * 
+   * **Suggestion**: Mount this Store during your application initialization, ideally in the root component, where you can display a splashscreen or an activity indicator while
+   * it happens. Good hook candidates are `componentWillMount` and `componentDidMount`, **which you can declare `async`**.
+   */
   public async mount(): Promise<void> {
     const registry = await this.storage.load()
     await this.state.mount(registry)
     this.state.addRegistryUpdateListener(this.storage.save.bind(this.storage))
+    if (this.config.autoRemoveStaleImages) {
+      await this.deleteAllStaleImages()
+    }
     this.mounted = true
   }
 
-    /**
-     * **Asynchronously** release the Store from memory.
-     * 
-     * **Suggestion**: Unmount the Store in your root component, in `componentWillUnmount` method, **which you can declare `async`**.
-     * 
-     * **Info**: Carefully consuming lifecycle methods is mandatory to prevent memory leaks. Note that **cache metadata is persisted on change**.
-     */
+  /**
+   * **Asynchronously** release the Store from memory.
+   * 
+   * **Suggestion**: Unmount the Store in your root component, in `componentWillUnmount` method, **which you can declare `async`**.
+   * 
+   * **Info**: Carefully consuming lifecycle methods is mandatory to prevent memory leaks. Note that **cache metadata is persisted on change**.
+   */
   public async unmount(): Promise<void> {
     this.assertMountInvariant()
     this.mounted = false

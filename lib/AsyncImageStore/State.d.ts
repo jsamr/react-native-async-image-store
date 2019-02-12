@@ -1,4 +1,5 @@
 import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener, URIPatch, URICacheRegistry } from './types';
+import { defaultConfig } from './default-config';
 export declare type ProposeFunction = (patch: Partial<URICacheModel> | null) => void;
 export declare type Reactor = (event: URIEvent, propose: ProposeFunction, payload?: any) => Promise<void>;
 export declare type RegistryUpdateListener = (reg: URICacheRegistry) => Promise<void>;
@@ -13,12 +14,13 @@ export declare function getInitialURICacheModel(uri: string): URICacheModel;
 export declare const DEBOUNCE_DELAY = 500;
 export declare class State {
     private name;
+    private config;
     private reactors;
     private listeners;
     private lastEvents;
     private registryListeners;
     private cacheStore;
-    constructor(name: string);
+    constructor(name: string, config?: typeof defaultConfig);
     private getListenersForURI;
     private notifyURIListeners;
     private getURILens;

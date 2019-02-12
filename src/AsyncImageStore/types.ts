@@ -1,29 +1,43 @@
 export interface AsyncImageStoreConfig {
-    /**
-     * Log events to the console
-     * 
-     * **Default**: `false`
-     */
-  debug: boolean,
-    /**
-     * 
-     * This value will be used when no `Cache-control: max-age` directive or `Expires` header have been given in the image response.
-     * `Infinity` can be used to denote an **immutable**, never-expire image default policy.
-     * 
-     * **Info** `max-age` is a cache control directive specifying the duration, in seconds, during which images are considered fresh.
-     * 
-     * **Default**: `84000` seconds (1 day)
-     */
-  defaultMaxAge: number
-    /**
-     * This value will override any `Cache-control: max-age` directive or `Expires` header in the image response.
-     * `Infinity` can be used to denote an **immutable**, never-expire policy.
-     *
-     * **Info** `max-age` is a cache control directive specifying the duration, in seconds, during which images are considered fresh.
-     * 
-     * **Default**: `undefined` (don't override)
-     */
+  /**
+   * Log events to the console
+   * 
+   * **Default**: `__DEV__`
+   */
+  debug?: boolean,
+  /**
+   * 
+   * This value will be used when no `Cache-control: max-age` directive or `Expires` header have been given in the image response.
+   * `Infinity` can be used to denote an **immutable**, never-expire image default policy.
+   * 
+   * **Info** `max-age` is a cache control directive specifying the duration, in seconds, during which images are considered fresh.
+   * 
+   * **Default**: `84000` seconds (1 day)
+   */
+  defaultMaxAge?: number
+  /**
+   * This value will override any `Cache-control: max-age` directive or `Expires` header in the image response.
+   * `Infinity` can be used to denote an **immutable**, never-expire policy.
+   *
+   * **Info** `max-age` is a cache control directive specifying the duration, in seconds, during which images are considered fresh.
+   * 
+   * **Default**: `undefined` (don't override)
+   */
   overrideMaxAge?: number
+  /**
+   * When this option is set to `true`, the store will automatically remove stale (expired)
+   * images on mount.
+   * 
+   * **Default**: `false`
+   */
+  autoRemoveStaleImages?: boolean
+  /**
+   * The maximum number of I/O operations per second handled by one Store at a time.
+   * This is a balance between operation speed and JS thread obstruction.
+   * 
+   * **Default**: `10`
+   */
+  ioThrottleFrequency?: number
   /**
    * A `class` which produces `StorageInterface` instances.
    * This class is used to instanciate a storage instance which get called to persist meta-info updates.

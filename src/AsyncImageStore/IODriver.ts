@@ -1,7 +1,8 @@
 import RNFetchBlob from 'rn-fetch-blob'
 import { FileLocator } from './FileLocator'
-import { ImageSource, URIVersionTag, AsyncImageStoreConfig, HTTPHeaders } from './types'
+import { ImageSource, URIVersionTag, HTTPHeaders, AsyncImageStoreConfig } from './types'
 import { mergeDeepRight } from 'ramda'
+import { defaultConfig } from './default-config'
 
 export interface RequestReport {
   uri: string
@@ -28,7 +29,7 @@ function expiryFromMaxAge(maxAge_s: number): number {
 export class IODriver {
 
   private fileLocator: FileLocator
-  constructor(name: string, private config: AsyncImageStoreConfig) {
+  constructor(name: string, private config: typeof defaultConfig & AsyncImageStoreConfig) {
     this.fileLocator = new FileLocator(name)
   }
 

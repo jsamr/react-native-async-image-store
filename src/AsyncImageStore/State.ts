@@ -1,8 +1,9 @@
-import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch, URICacheRegistry } from './types'
+import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch, URICacheRegistry, AsyncImageStoreConfig } from './types'
 import { mergePath } from 'ramda-adjunct'
 import { lensPath, lensProp, set, equals, view, assocPath } from 'ramda'
 import pdebounce from 'p-debounce'
 import pthrottle from 'p-throttle'
+import { defaultConfig } from './default-config'
 
 export type ProposeFunction = (patch: Partial<URICacheModel>|null) => void
 
@@ -70,12 +71,12 @@ export class State {
     registry: {}
   }
 
-  constructor(private name: string) {
+  constructor(private name: string, private config: typeof defaultConfig = defaultConfig) {
     this.updateURIModel = this.updateURIModel.bind(this)
     this.updateNetworkModel = this.updateNetworkModel.bind(this)
     // Throttle dispatch commands to prevent I/O and CPU obstruction
     // 10 operations / second seems like a sane limit
-    this.dispatchCommand = pthrottle(this.dispatchCommand.bind(this), 10, 1000)
+    this.dispatchCommand = pthrottle(this.dispatchCommand.bind(this), this.config.ioThrottleFrequency, 1000)
   }
 
   private getListenersForURI(uri: string) {

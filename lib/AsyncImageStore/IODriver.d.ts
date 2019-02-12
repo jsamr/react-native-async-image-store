@@ -1,4 +1,5 @@
 import { ImageSource, URIVersionTag, AsyncImageStoreConfig } from './types';
+import { defaultConfig } from './default-config';
 export interface RequestReport {
     uri: string;
     expires: number;
@@ -9,7 +10,7 @@ export interface RequestReport {
 export declare class IODriver {
     private config;
     private fileLocator;
-    constructor(name: string, config: AsyncImageStoreConfig);
+    constructor(name: string, config: typeof defaultConfig & AsyncImageStoreConfig);
     private prepareFetch;
     private getVersionTagFromHeaders;
     private getExpirationFromHeaders;
