@@ -247,8 +247,8 @@ export class State {
      * Dispatch a command to all registered URIs.
      * 
      * @param commandType
-     * @param payload? 
-     * @param onProgress?
+     * @param payload
+     * @param onProgress
      */
   public async dispatchCommandToAll(commandType: URICommandType, payload?: any, onProgress?: ProgressCallback): Promise<URIEvent[]> {
     const events: URIEvent[] = []
@@ -267,8 +267,8 @@ export class State {
      * Dispatch a command to all URIs models satisfying the given predicate.
      * @param commandType
      * @param predicate 
-     * @param payload?
-     * @param onProgress?
+     * @param payload
+     * @param onProgress
      */
   public async dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any, onProgress?: ProgressCallback): Promise<URIEvent[]> {
     const events: URIEvent[] = []
