@@ -41,7 +41,7 @@ export interface AsyncImageStoreConfig {
    * 
    * **Default**: `PERMANENT`
    */
-  fsKind?: 'CACHE' | 'PERMANENT'
+  fsKind?: FSKind
   /**
    * The maximum number of I/O operations per second handled by one Store at a time.
    * This is a balance between operation speed and JS thread obstruction.
@@ -62,6 +62,8 @@ export interface AsyncImageStoreConfig {
    */
   Storage?: StorageConstructor<any>
 }
+
+export type FSKind = 'CACHE' | 'PERMANENT'
 
 export interface StorageInstance {
   load(): Promise<URICacheRegistry|null>

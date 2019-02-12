@@ -30,7 +30,7 @@ export class IODriver {
 
   private fileLocator: FileLocator
   constructor(name: string, private config: typeof defaultConfig & AsyncImageStoreConfig) {
-    this.fileLocator = new FileLocator(name)
+    this.fileLocator = new FileLocator(name, config)
   }
 
   private prepareFetch(uri: string) {

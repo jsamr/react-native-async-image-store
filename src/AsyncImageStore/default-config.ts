@@ -1,5 +1,5 @@
 import { Storage } from './Storage'
-import { StorageConstructor } from './types'
+import { StorageConstructor, FSKind } from './types'
 
 declare const __DEV__: boolean
 
@@ -8,6 +8,6 @@ export const defaultConfig = {
   debug: __DEV__,
   defaultMaxAge: 86000,
   autoRemoveStaleImages: false,
-  fsKind: 'PERMANENT',
+  fsKind: 'PERMANENT' as FSKind,
   ioThrottleFrequency: 10
 }

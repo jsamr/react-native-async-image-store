@@ -13,14 +13,12 @@ export declare function getURIStateFromModel(model: URICacheModel | null, networ
 export declare function getInitialURICacheModel(uri: string): URICacheModel;
 export declare const DEBOUNCE_DELAY = 500;
 export declare class State {
-    private name;
-    private config;
     private reactors;
     private listeners;
     private lastEvents;
     private registryListeners;
     private cacheStore;
-    constructor(name: string, config?: typeof defaultConfig);
+    constructor(config?: typeof defaultConfig);
     private getListenersForURI;
     private notifyURIListeners;
     private getURILens;

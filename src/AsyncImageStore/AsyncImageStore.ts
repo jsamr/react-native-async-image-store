@@ -67,7 +67,7 @@ export class AsyncImageStore {
     }
     this.config = config
     this.fetcher = new IODriver(name, config)
-    this.state = new State(name, config)
+    this.state = new State(config)
     this.storage = new config.Storage(name)
     this.state.registerCommandReactor('PRELOAD', this.onPreload.bind(this))
     this.state.registerCommandReactor('REVALIDATE', this.onRevalidate.bind(this))
