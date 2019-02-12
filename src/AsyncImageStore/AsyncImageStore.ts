@@ -123,10 +123,10 @@ export class AsyncImageStore {
       }
     } else {
       if (state.fileState === 'FRESH') {
-        this.log(`File from origin ${model.uri} is FRESH, ignoring revalidation.`)
+        this.log(`File from origin ${model.uri} is FRESH and file exists, revalidation succeeded.`)
       }
       if (state.fileState === 'STALE' && state.networkState === 'UNAVAILABLE') {
-        this.log(`File from origin ${model.uri} is STALE but network is not available; ignoring revalidation.`)
+        this.log(`File from origin ${model.uri} is STALE and file exists, but network is not available; ignoring revalidation.`)
       }
     }
     revalidate = revalidate && (state.fileState === 'UNAVAILABLE' || state.fileState === 'STALE')
@@ -167,12 +167,12 @@ export class AsyncImageStore {
     return this.state.dispatchCommand(uri, name, payload)
   }
 
-  private async dispatchCommandToAll<P>(name: URICommandType) {
-    return this.state.dispatchCommandToAll(name)
+  private async dispatchCommandToAll<P>(name: URICommandType, onProgress?: (event: URIEvent) => void) {
+    return this.state.dispatchCommandToAll(name, null, onProgress)
   }
 
-  private async dispatchCommandWhen<P>(name: URICommandType, when: (state: URICacheState) => boolean) {
-    return this.state.dispatchCommandWhen(name, when)
+  private async dispatchCommandWhen<P>(name: URICommandType, when: (state: URICacheState) => boolean, onProgress?: (event: URIEvent) => void) {
+    return this.state.dispatchCommandWhen(name, when, null, onProgress)
   }
 
   private assertMountInvariant() {
@@ -256,13 +256,16 @@ export class AsyncImageStore {
      * **Info** This function will revalidate images which are already preloaded, and download the others.
      * 
      * @param targets an array of string URI or React `ImageURISource` prop
+     * @param onProgress? a callback to be invoked after each preloading
      * @return A Promise resolving to an array of `URIEvent`
      */
-  public async preloadImages(targets: Target[]): Promise<URIEvent[]> {
+  public async preloadImages(targets: Target[], onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
     this.assertMountInvariant()
     const events: URIEvent[] = []
     for (const target of targets) {
-      events.push(await this.preloadImage(target))
+      const event = await this.preloadImage(target)
+      events.push(event)
+      onProgress && onProgress(event)
     }
     return events
   }
@@ -281,18 +284,22 @@ export class AsyncImageStore {
 
     /**
      * **Asynchronously** delete all images from the Store.
+     * 
+     * @param onProgress? a callback to be invoked after each deletion
      */
-  public async deleteAllImages(): Promise<URIEvent[]> {
+  public async deleteAllImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
     this.assertMountInvariant()
-    return this.dispatchCommandToAll('DELETE')
+    return this.dispatchCommandToAll('DELETE', onProgress)
   }
 
     /**
      * **Asynchronously** delete all image which are stale from the Store.
+     * 
+     * @param onProgress? a callback to be invoked after each deletion
      */
-  public async deleteAllStaleImages(): Promise<URIEvent[]> {
+  public async deleteAllStaleImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
     this.assertMountInvariant()
-    return this.dispatchCommandWhen('DELETE', (s => s.fileState === 'STALE'))
+    return this.dispatchCommandWhen('DELETE', (s => s.fileState === 'STALE'), onProgress)
   }
 
     /**
@@ -326,11 +333,12 @@ export class AsyncImageStore {
      * **Warning** This method does nothing on a resource which has not been registered,
      * i.e. to which `preload` has not been called at least once.
      * 
+     * @param onProgress? a callback to be invoked after each revalidation
      * @return A Promise resolving to a list of `URIEvent` related to each revalidation.
      */
-  public async revalidateAllImages(): Promise<URIEvent[]> {
+  public async revalidateAllImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
     this.assertMountInvariant()
-    return this.dispatchCommandToAll('REVALIDATE')
+    return this.dispatchCommandToAll('REVALIDATE', onProgress)
   }
 
     /**
@@ -340,28 +348,32 @@ export class AsyncImageStore {
      * 
      * - file existence checking;
      * - conditionnal HTTP requests, with `If-None-Match` or `If-Modified-Since` headers.
+     * 
+     * @param onProgress? a callback to be invoked after each revalidation
+     * @return A Promise resolving to a list of `URIEvent` related to each revalidation.
      */
-  public async revalidateAllStaleImages(): Promise<URIEvent[]> {
+  public async revalidateAllStaleImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
     this.assertMountInvariant()
-    return this.dispatchCommandWhen('REVALIDATE', (s => s.fileState === 'STALE'))
+    return this.dispatchCommandWhen('REVALIDATE', (s => s.fileState === 'STALE'), onProgress)
   }
 
   /**
    * **Asynchronously** clear and **unmount** the store. This method:
    * 
    * - delete all registered images files from filesystem
+   * - unmount the store
    * - clear metadata from storage
    * - delete containing folder from filesystem
-   * - unmount the store
    * 
    * **Warning**: This method will wipe out all images registered with this library.
+   * 
+   * @param onProgress? a callback to be invoked after each deletion
    */
-  public async clear(): Promise<void> {
-    await this.deleteAllImages()
-    await this.state.unmount()
+  public async clear(onProgress?: (event: URIEvent) => void): Promise<void> {
+    await this.deleteAllImages(onProgress)
+    await this.unmount()
     await this.storage.clear()
     await this.fetcher.deleteCacheRoot()
-    await this.unmount()
   }
 }
 

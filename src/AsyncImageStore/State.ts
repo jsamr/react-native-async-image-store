@@ -247,11 +247,14 @@ export class State {
      * 
      * @param commandType
      * @param payload? 
+     * @param onProgress?
      */
-  public async dispatchCommandToAll(commandType: URICommandType, payload?: any): Promise<URIEvent[]> {
+  public async dispatchCommandToAll(commandType: URICommandType, payload?: any, onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
     const events: URIEvent[] = []
     for (const uri of Object.getOwnPropertyNames(this.cacheStore.registry)) {
-      events.push(await this.dispatchCommand(uri, commandType, payload))
+      const nextEvent = await this.dispatchCommand(uri, commandType, payload)
+      events.push(nextEvent)
+      onProgress && onProgress(nextEvent)
     }
     return events
   }
@@ -260,12 +263,16 @@ export class State {
      * Dispatch a command to all URIs models satisfying the given predicate.
      * @param commandType
      * @param predicate 
+     * @param payload?
+     * @param onProgress?
      */
-  public async dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any): Promise<URIEvent[]> {
+  public async dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any, onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
     const events: URIEvent[] = []
     for (const [uri, event] of this.lastEvents) {
       if (predicate(event.nextState)) {
-        events.push(await this.dispatchCommand(uri, commandType))
+        const nextEvent = await this.dispatchCommand(uri, commandType)
+        events.push(nextEvent)
+        onProgress && onProgress(nextEvent)
       }
     }
     return events

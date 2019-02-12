@@ -68,9 +68,10 @@ export declare class AsyncImageStore {
      * **Info** This function will revalidate images which are already preloaded, and download the others.
      *
      * @param targets an array of string URI or React `ImageURISource` prop
+     * @param onProgress? a callback to be invoked after each preloading
      * @return A Promise resolving to an array of `URIEvent`
      */
-    preloadImages(targets: Target[]): Promise<URIEvent[]>;
+    preloadImages(targets: Target[], onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
     /**
      * **Asynchronously** delete an existing image from the Store.
      * Does nothing if the provided URI have no matching entry in Store.
@@ -80,12 +81,16 @@ export declare class AsyncImageStore {
     deleteImage(target: Target): Promise<URIEvent>;
     /**
      * **Asynchronously** delete all images from the Store.
+     *
+     * @param onProgress? a callback to be invoked after each deletion
      */
-    deleteAllImages(): Promise<URIEvent[]>;
+    deleteAllImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
     /**
      * **Asynchronously** delete all image which are stale from the Store.
+     *
+     * @param onProgress? a callback to be invoked after each deletion
      */
-    deleteAllStaleImages(): Promise<URIEvent[]>;
+    deleteAllStaleImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
     /**
      * **Asynchronously** revalidate a stored image *if it was previously registered*.
      *
@@ -112,9 +117,10 @@ export declare class AsyncImageStore {
      * **Warning** This method does nothing on a resource which has not been registered,
      * i.e. to which `preload` has not been called at least once.
      *
+     * @param onProgress? a callback to be invoked after each revalidation
      * @return A Promise resolving to a list of `URIEvent` related to each revalidation.
      */
-    revalidateAllImages(): Promise<URIEvent[]>;
+    revalidateAllImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
     /**
      * **Asynchronously** revalidate all stale images in the store.
      *
@@ -122,19 +128,24 @@ export declare class AsyncImageStore {
      *
      * - file existence checking;
      * - conditionnal HTTP requests, with `If-None-Match` or `If-Modified-Since` headers.
+     *
+     * @param onProgress? a callback to be invoked after each revalidation
+     * @return A Promise resolving to a list of `URIEvent` related to each revalidation.
      */
-    revalidateAllStaleImages(): Promise<URIEvent[]>;
+    revalidateAllStaleImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
     /**
      * **Asynchronously** clear and **unmount** the store. This method:
      *
      * - delete all registered images files from filesystem
+     * - unmount the store
      * - clear metadata from storage
      * - delete containing folder from filesystem
-     * - unmount the store
      *
      * **Warning**: This method will wipe out all images registered with this library.
+     *
+     * @param onProgress? a callback to be invoked after each deletion
      */
-    clear(): Promise<void>;
+    clear(onProgress?: (event: URIEvent) => void): Promise<void>;
 }
 /**
  * Get store by name, if exists.

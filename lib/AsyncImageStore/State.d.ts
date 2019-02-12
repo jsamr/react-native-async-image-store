@@ -83,14 +83,17 @@ export declare class State {
      *
      * @param commandType
      * @param payload?
+     * @param onProgress?
      */
-    dispatchCommandToAll(commandType: URICommandType, payload?: any): Promise<URIEvent[]>;
+    dispatchCommandToAll(commandType: URICommandType, payload?: any, onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
     /**
      * Dispatch a command to all URIs models satisfying the given predicate.
      * @param commandType
      * @param predicate
+     * @param payload?
+     * @param onProgress?
      */
-    dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any): Promise<URIEvent[]>;
+    dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any, onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
     mount(initialRegistry: URICacheRegistry | null): Promise<void>;
     unmount(): Promise<void>;
 }
