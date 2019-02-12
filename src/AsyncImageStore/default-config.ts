@@ -8,5 +8,6 @@ export const defaultConfig = {
   debug: __DEV__,
   defaultMaxAge: 86000,
   autoRemoveStaleImages: false,
+  fsKind: 'PERMANENT',
   ioThrottleFrequency: 10
 }

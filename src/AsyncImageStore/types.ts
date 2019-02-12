@@ -32,6 +32,17 @@ export interface AsyncImageStoreConfig {
    */
   autoRemoveStaleImages?: boolean
   /**
+   * Which kind of file-system should be used.
+   * 
+   * Files stored while `fsKind` is set to `PERMANENT` will never be (intentionnaly) altered
+   * by the operating system, while `CACHE` option offers no such guarantee thus limitating your application storage footprint.
+   * 
+   * **Implementation note**: See [`RNFetchBlob.fs.dirs.DocumentDir` and `RNFetchBlob.fs.dirs.CacheDir`](https://github.com/joltup/rn-fetch-blob/wiki/File-System-Access-API#dirs)
+   * 
+   * **Default**: `PERMANENT`
+   */
+  fsKind?: 'CACHE' | 'PERMANENT'
+  /**
    * The maximum number of I/O operations per second handled by one Store at a time.
    * This is a balance between operation speed and JS thread obstruction.
    * 

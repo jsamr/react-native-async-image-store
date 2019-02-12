@@ -1,7 +1,8 @@
 - add `onLoad`, `onError` prop hooks to `OfflineImage`
-- implement `autoRemoveSaleImages` param
+- ~~implement `autoRemoveSaleImages` param~~
 - add `forceReload` prop to `OfflineImage`
 - implement `forceReload` command
 - implement `checkFile` command
-- investigate cache size limitations
-- document Store methods
+- ~~investigate cache size limitations~~
+- ~~document Store methods~~
+- export configuration presets `cachePreset`, `storagePreset`
