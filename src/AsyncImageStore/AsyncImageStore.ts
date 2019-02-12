@@ -296,10 +296,7 @@ export class AsyncImageStore {
   }
 
     /**
-     * **Asynchronously** revalidate a stored image:
-     * 
-     * - **if it was previously registered** and
-     * - **if it is staled**
+     * **Asynchronously** revalidate a stored image *if it was previously registered*.
      * 
      * **Info**: Revalidation is done with:
      * 
@@ -316,6 +313,24 @@ export class AsyncImageStore {
     this.assertMountInvariant()
     const source = getSourceFromUri(target)
     return this.dispatchCommandToURI(source.uri, 'REVALIDATE', source.headers)
+  }
+
+    /**
+     * **Asynchronously** revalidate all images *which were previously registered*.
+     * 
+     * **Info**: Revalidation is done with:
+     * 
+     * - file existence checking;
+     * - conditionnal HTTP requests, with `If-None-Match` or `If-Modified-Since` headers.
+     * 
+     * **Warning** This method does nothing on a resource which has not been registered,
+     * i.e. to which `preload` has not been called at least once.
+     * 
+     * @return A Promise resolving to a list of `URIEvent` related to each revalidation.
+     */
+  public async revalidateAllImages(): Promise<URIEvent[]> {
+    this.assertMountInvariant()
+    return this.dispatchCommandToAll('REVALIDATE')
   }
 
     /**
