@@ -1,4 +1,4 @@
-import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener, URIPatch, URICacheRegistry } from './types';
+import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener, URIPatch, URICacheRegistry, ProgressCallback } from './types';
 import { defaultConfig } from './default-config';
 export declare type ProposeFunction = (patch: Partial<URICacheModel> | null) => void;
 export declare type Reactor = (event: URIEvent, propose: ProposeFunction, payload?: any) => Promise<void>;
@@ -85,7 +85,7 @@ export declare class State {
      * @param payload?
      * @param onProgress?
      */
-    dispatchCommandToAll(commandType: URICommandType, payload?: any, onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
+    dispatchCommandToAll(commandType: URICommandType, payload?: any, onProgress?: ProgressCallback): Promise<URIEvent[]>;
     /**
      * Dispatch a command to all URIs models satisfying the given predicate.
      * @param commandType
@@ -93,7 +93,7 @@ export declare class State {
      * @param payload?
      * @param onProgress?
      */
-    dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any, onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
+    dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any, onProgress?: ProgressCallback): Promise<URIEvent[]>;
     mount(initialRegistry: URICacheRegistry | null): Promise<void>;
     unmount(): Promise<void>;
 }

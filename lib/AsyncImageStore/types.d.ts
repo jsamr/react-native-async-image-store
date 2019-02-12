@@ -69,6 +69,7 @@ export interface StorageInstance {
     clear(): Promise<void>;
 }
 export declare type StorageConstructor<C extends StorageInstance = StorageInstance> = new (name: string) => C;
+export declare type ProgressCallback = (event: URIEvent, currentIndex: number, total: number) => void;
 export interface HTTPHeaders {
     [n: string]: string;
 }

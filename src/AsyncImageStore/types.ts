@@ -73,6 +73,8 @@ export interface StorageInstance {
 
 export type StorageConstructor<C extends StorageInstance = StorageInstance> = new(name: string) => C
 
+export type ProgressCallback = (event: URIEvent, currentIndex: number, total: number) => void
+
 export interface HTTPHeaders {
   [n: string]: string
 }

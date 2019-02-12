@@ -1,4 +1,4 @@
-import { AsyncImageStoreConfig, ImageSource, URIEvent, URIEventListener } from './types';
+import { AsyncImageStoreConfig, ImageSource, URIEvent, URIEventListener, ProgressCallback } from './types';
 export declare type Target = string | ImageSource;
 export declare class AsyncImageStore {
     private name;
@@ -71,7 +71,7 @@ export declare class AsyncImageStore {
      * @param onProgress? a callback to be invoked after each preloading
      * @return A Promise resolving to an array of `URIEvent`
      */
-    preloadImages(targets: Target[], onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
+    preloadImages(targets: Target[], onProgress?: ProgressCallback): Promise<URIEvent[]>;
     /**
      * **Asynchronously** delete an existing image from the Store.
      * Does nothing if the provided URI have no matching entry in Store.
@@ -84,13 +84,13 @@ export declare class AsyncImageStore {
      *
      * @param onProgress? a callback to be invoked after each deletion
      */
-    deleteAllImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
+    deleteAllImages(onProgress?: ProgressCallback): Promise<URIEvent[]>;
     /**
      * **Asynchronously** delete all image which are stale from the Store.
      *
      * @param onProgress? a callback to be invoked after each deletion
      */
-    deleteAllStaleImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
+    deleteAllStaleImages(onProgress?: ProgressCallback): Promise<URIEvent[]>;
     /**
      * **Asynchronously** revalidate a stored image *if it was previously registered*.
      *
@@ -120,7 +120,7 @@ export declare class AsyncImageStore {
      * @param onProgress? a callback to be invoked after each revalidation
      * @return A Promise resolving to a list of `URIEvent` related to each revalidation.
      */
-    revalidateAllImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
+    revalidateAllImages(onProgress?: ProgressCallback): Promise<URIEvent[]>;
     /**
      * **Asynchronously** revalidate all stale images in the store.
      *
@@ -132,7 +132,7 @@ export declare class AsyncImageStore {
      * @param onProgress? a callback to be invoked after each revalidation
      * @return A Promise resolving to a list of `URIEvent` related to each revalidation.
      */
-    revalidateAllStaleImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]>;
+    revalidateAllStaleImages(onProgress?: ProgressCallback): Promise<URIEvent[]>;
     /**
      * **Asynchronously** clear and **unmount** the store. This method:
      *
@@ -145,7 +145,7 @@ export declare class AsyncImageStore {
      *
      * @param onProgress? a callback to be invoked after each deletion
      */
-    clear(onProgress?: (event: URIEvent) => void): Promise<void>;
+    clear(onProgress?: ProgressCallback): Promise<void>;
 }
 /**
  * Get store by name, if exists.

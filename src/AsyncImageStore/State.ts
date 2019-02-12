@@ -1,4 +1,4 @@
-import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch, URICacheRegistry } from './types'
+import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch, URICacheRegistry, ProgressCallback } from './types'
 import { mergePath } from 'ramda-adjunct'
 import { lensPath, lensProp, set, equals, view, assocPath } from 'ramda'
 import pdebounce from 'p-debounce'
@@ -250,12 +250,15 @@ export class State {
      * @param payload? 
      * @param onProgress?
      */
-  public async dispatchCommandToAll(commandType: URICommandType, payload?: any, onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
+  public async dispatchCommandToAll(commandType: URICommandType, payload?: any, onProgress?: ProgressCallback): Promise<URIEvent[]> {
     const events: URIEvent[] = []
-    for (const uri of Object.getOwnPropertyNames(this.cacheStore.registry)) {
+    const properties = Object.getOwnPropertyNames(this.cacheStore.registry)
+    let i = 0
+    for (const uri of properties) {
       const nextEvent = await this.dispatchCommand(uri, commandType, payload)
       events.push(nextEvent)
-      onProgress && onProgress(nextEvent)
+      onProgress && onProgress(nextEvent, i, properties.length)
+      i = i + 1
     }
     return events
   }
@@ -267,14 +270,15 @@ export class State {
      * @param payload?
      * @param onProgress?
      */
-  public async dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any, onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
+  public async dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any, onProgress?: ProgressCallback): Promise<URIEvent[]> {
     const events: URIEvent[] = []
-    for (const [uri, event] of this.lastEvents) {
-      if (predicate(event.nextState)) {
-        const nextEvent = await this.dispatchCommand(uri, commandType)
-        events.push(nextEvent)
-        onProgress && onProgress(nextEvent)
-      }
+    const applicableEvents = Array.from(this.lastEvents.values()).filter(e => predicate(e.nextState))
+    let i = 0
+    for (const event of applicableEvents) {
+      const nextEvent = await this.dispatchCommand(event.nextModel.uri, commandType, payload)
+      events.push(nextEvent)
+      onProgress && onProgress(nextEvent, i, applicableEvents.length)
+      i = i + 1
     }
     return events
   }

@@ -1,5 +1,5 @@
 import invariant from 'invariant'
-import { AsyncImageStoreConfig, ImageSource, URIPatch, URIEvent, HTTPHeaders, URICacheState, URIEventListener, URICommandType, StorageInstance } from './types'
+import { AsyncImageStoreConfig, ImageSource, URIPatch, URIEvent, HTTPHeaders, URICacheState, URIEventListener, URICommandType, StorageInstance, ProgressCallback } from './types'
 import { IODriver, RequestReport } from './IODriver'
 import { Platform } from 'react-native'
 import { State, ProposeFunction } from './State'
@@ -161,11 +161,11 @@ export class AsyncImageStore {
     return this.state.dispatchCommand(uri, name, payload)
   }
 
-  private async dispatchCommandToAll<P>(name: URICommandType, onProgress?: (event: URIEvent) => void) {
+  private async dispatchCommandToAll<P>(name: URICommandType, onProgress?: ProgressCallback) {
     return this.state.dispatchCommandToAll(name, null, onProgress)
   }
 
-  private async dispatchCommandWhen<P>(name: URICommandType, when: (state: URICacheState) => boolean, onProgress?: (event: URIEvent) => void) {
+  private async dispatchCommandWhen<P>(name: URICommandType, when: (state: URICacheState) => boolean, onProgress?: ProgressCallback) {
     return this.state.dispatchCommandWhen(name, when, null, onProgress)
   }
 
@@ -256,13 +256,15 @@ export class AsyncImageStore {
      * @param onProgress? a callback to be invoked after each preloading
      * @return A Promise resolving to an array of `URIEvent`
      */
-  public async preloadImages(targets: Target[], onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
+  public async preloadImages(targets: Target[], onProgress?: ProgressCallback): Promise<URIEvent[]> {
     this.assertMountInvariant()
     const events: URIEvent[] = []
+    let i = 0
     for (const target of targets) {
       const event = await this.preloadImage(target)
       events.push(event)
-      onProgress && onProgress(event)
+      onProgress && onProgress(event, i, targets.length)
+      i = i + 1
     }
     return events
   }
@@ -284,7 +286,7 @@ export class AsyncImageStore {
      * 
      * @param onProgress? a callback to be invoked after each deletion
      */
-  public async deleteAllImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
+  public async deleteAllImages(onProgress?: ProgressCallback): Promise<URIEvent[]> {
     this.assertMountInvariant()
     return this.dispatchCommandToAll('DELETE', onProgress)
   }
@@ -294,7 +296,7 @@ export class AsyncImageStore {
      * 
      * @param onProgress? a callback to be invoked after each deletion
      */
-  public async deleteAllStaleImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
+  public async deleteAllStaleImages(onProgress?: ProgressCallback): Promise<URIEvent[]> {
     this.assertMountInvariant()
     return this.dispatchCommandWhen('DELETE', (s => s.fileState === 'STALE'), onProgress)
   }
@@ -333,7 +335,7 @@ export class AsyncImageStore {
      * @param onProgress? a callback to be invoked after each revalidation
      * @return A Promise resolving to a list of `URIEvent` related to each revalidation.
      */
-  public async revalidateAllImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
+  public async revalidateAllImages(onProgress?: ProgressCallback): Promise<URIEvent[]> {
     this.assertMountInvariant()
     return this.dispatchCommandToAll('REVALIDATE', onProgress)
   }
@@ -349,7 +351,7 @@ export class AsyncImageStore {
      * @param onProgress? a callback to be invoked after each revalidation
      * @return A Promise resolving to a list of `URIEvent` related to each revalidation.
      */
-  public async revalidateAllStaleImages(onProgress?: (event: URIEvent) => void): Promise<URIEvent[]> {
+  public async revalidateAllStaleImages(onProgress?: ProgressCallback): Promise<URIEvent[]> {
     this.assertMountInvariant()
     return this.dispatchCommandWhen('REVALIDATE', (s => s.fileState === 'STALE'), onProgress)
   }
@@ -366,7 +368,7 @@ export class AsyncImageStore {
    * 
    * @param onProgress? a callback to be invoked after each deletion
    */
-  public async clear(onProgress?: (event: URIEvent) => void): Promise<void> {
+  public async clear(onProgress?: ProgressCallback): Promise<void> {
     await this.deleteAllImages(onProgress)
     await this.unmount()
     await this.storage.clear()
