@@ -8,15 +8,17 @@ export interface RequestReport {
     path: string;
 }
 export declare class IODriver {
+    private name;
     private config;
     private fileLocator;
     constructor(name: string, config: typeof defaultConfig & AsyncImageStoreConfig);
     private prepareFetch;
     private getVersionTagFromHeaders;
     private getExpirationFromHeaders;
+    private log;
     saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport>;
     revalidateImage({ uri, headers }: ImageSource, versionTag: URIVersionTag): Promise<RequestReport>;
     imageExists({ uri }: ImageSource): Promise<boolean>;
-    deleteImage({ uri }: ImageSource): Promise<void>;
+    deleteImage(src: ImageSource): Promise<void>;
     deleteCacheRoot(): Promise<void>;
 }

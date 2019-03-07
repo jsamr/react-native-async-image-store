@@ -30,7 +30,7 @@ function expiryFromMaxAge(maxAge_s: number): number {
 export class IODriver {
 
   private fileLocator: FileLocator
-  constructor(name: string, private config: typeof defaultConfig & AsyncImageStoreConfig) {
+  constructor(private name: string, private config: typeof defaultConfig & AsyncImageStoreConfig) {
     this.fileLocator = new FileLocator(name, config)
   }
 
@@ -77,8 +77,14 @@ export class IODriver {
       const expiresAt = headers.expires || headers.Expires
       return Date.parse(expiresAt)
     }
-        // console.info(`COULDN'T FIND EXPIRY OR MAX AGE INFORMATION, FALLBACK TO DEFAULT`)
+    // console.info(`COULDN'T FIND EXPIRY OR MAX AGE INFORMATION, FALLBACK TO DEFAULT`)
     return expiryFromMaxAge(this.config.defaultMaxAge)
+  }
+
+  private log(info: string) {
+    if (this.config.debug) {
+      console.log(`AsyncImageStore ${this.name}: ${info}`)
+    }
   }
 
   public async saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport> {
@@ -86,7 +92,7 @@ export class IODriver {
     const headers = mergeDeepRight(userHeaders, { 'Cache-Control': 'max-age=31536000' })
     try {
       const response = await this.prepareFetch(uri).fetch('GET', uri, headers)
-      const error = response.respInfo.status >= 400 ? new Error(`Received status ${response.respInfo.status}`) : null
+      const error = response.respInfo.status >= 400 ? new ImageDownloadFailure(uri, response.respInfo.status) : null
       return {
         uri,
         error,
@@ -95,7 +101,6 @@ export class IODriver {
         versionTag: this.getVersionTagFromHeaders(response.respInfo.headers)
       }
     } catch (error) {
-      console.info(error)
       return {
         uri,
         error: new ImageDownloadFailure(uri, error.status),
@@ -119,12 +124,14 @@ export class IODriver {
     return RNFetchBlob.fs.exists(this.fileLocator.getURIFilename(uri))
   }
 
-  public async deleteImage({ uri }: ImageSource): Promise<void> {
+  public async deleteImage(src: ImageSource): Promise<void> {
+    const { uri } = src
     const file = this.fileLocator.getURIFilename(uri)
-    if (await RNFetchBlob.fs.exists(file)) {
-      return RNFetchBlob.fs.unlink(this.fileLocator.getURIFilename(uri))
+    if (await this.imageExists(src)) {
+      await RNFetchBlob.fs.unlink(this.fileLocator.getURIFilename(uri))
+      this.log(`Local file '${file}' from origin ${uri} successfully deleted`)
     }
-    console.warn(`File '${file}' was targeted for delete but it does not exist`)
+    this.log(`Local file '${file}' from origin ${uri} was targeted for delete but it does not exist`)
   }
 
   public async deleteCacheRoot(): Promise<void> {
