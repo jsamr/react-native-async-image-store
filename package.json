@@ -19,18 +19,19 @@
     "cache"
   ],
   "devDependencies": {
+    "@types/es6-error": "^4.0.2",
     "@types/invariant": "^2.2.29",
     "@types/jest": "^23.3.13",
     "@types/ramda": "^0.25.47",
+    "react": "^16.8.1",
+    "react-native": "^0.58.4",
+    "rn-fetch-blob": "^0.10.15",
     "ts-essentials": "^1.0.2",
     "tslint": "^5.12.1",
     "tslint-config-airbnb": "^5.11.1",
     "tslint-react": "^3.6.0",
     "tslint-react-recommended": "^1.0.15",
-    "typescript": "^3.2.4",
-    "react": "^16.8.1",
-    "react-native": "^0.58.4",
-    "rn-fetch-blob": "^0.10.15"
+    "typescript": "^3.2.4"
   },
   "scripts": {
     "build": "tsc",
@@ -47,6 +48,7 @@
     "@types/react": "^16.8.2",
     "@types/react-native": "^0.57.34",
     "buffer": "^5.2.1",
+    "es6-error": "^4.1.1",
     "invariant": "^2.2.4",
     "jest": "^23.6.0",
     "p-debounce": "^1.0.0",

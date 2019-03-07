@@ -3,6 +3,7 @@ import { FileLocator } from './FileLocator'
 import { ImageSource, URIVersionTag, HTTPHeaders, AsyncImageStoreConfig } from './types'
 import { mergeDeepRight } from 'ramda'
 import { defaultConfig } from './default-config'
+import { ImageDownloadFailure } from './ImageDownloadFailure';
 
 export interface RequestReport {
   uri: string
@@ -57,7 +58,7 @@ export class IODriver {
   }
 
   private getExpirationFromHeaders(headers: HTTPHeaders): number {
-        // TODO resilience to case variations
+    // TODO resilience to case variations
     if (headers['cache-control'] || headers['Cache-Control']) {
       const contentType = headers['cache-control'] || headers['Cache-Control']
       const directives = contentType.split(',')
@@ -81,7 +82,7 @@ export class IODriver {
   }
 
   public async saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport> {
-        // Override default cache-control
+    // Override default cache-control
     const headers = mergeDeepRight(userHeaders, { 'Cache-Control': 'max-age=31536000' })
     try {
       const response = await this.prepareFetch(uri).fetch('GET', uri, headers)
@@ -94,9 +95,10 @@ export class IODriver {
         versionTag: this.getVersionTagFromHeaders(response.respInfo.headers)
       }
     } catch (error) {
+      console.info(error)
       return {
         uri,
-        error,
+        error: new ImageDownloadFailure(uri, error.status),
         expires: 0,
         path: this.fileLocator.getURIFilename(uri),
         versionTag: null
@@ -118,14 +120,15 @@ export class IODriver {
   }
 
   public async deleteImage({ uri }: ImageSource): Promise<void> {
-    return RNFetchBlob.fs
-      .unlink(this.fileLocator.getURIFilename(uri))
-      .catch(console.error.bind(console))
+    const file = this.fileLocator.getURIFilename(uri)
+    if (await RNFetchBlob.fs.exists(file)) {
+      return RNFetchBlob.fs.unlink(this.fileLocator.getURIFilename(uri))
+    }
+    console.warn(`File '${file}' was targeted for delete but it does not exist`)
   }
 
   public async deleteCacheRoot(): Promise<void> {
     return RNFetchBlob.fs
       .unlink(this.fileLocator.baseDir)
-      .catch(console.error.bind(console))
   }
 }

@@ -365,6 +365,7 @@ export class AsyncImageStore {
    * - delete store root folder from filesystem
    * 
    * **Warning**: This method will wipe out all images registered with this library.
+   * @throws If the cache root could not be deleted
    * 
    */
   public async clear(): Promise<void> {
