@@ -9,7 +9,12 @@
       "lib": ["es5", "es6"],
       "allowSyntheticDefaultImports": true,
       "esModuleInterop": true,
-      "downlevelIteration": true
+      "downlevelIteration": true,
+      "baseUrl": "./src",
+      "paths": {
+        "/errors/*": ["errors/*"],
+        "/interfaces": ["interfaces/index.ts"]
+      }
     },
     "include": ["src"],
     "exclude": ["node_modules", "**/__tests__/*"]

@@ -1,4 +1,4 @@
-import { ImageSource, IODriverInterface, RequestReport, URIVersionTag, HTTPHeaders, AsyncImageStoreConfig } from './types'
+import { ImageSource, IODriverInterface, RequestReport, URIVersionTag, HTTPHeaders, AsyncImageStoreConfig } from '/interfaces'
 
 export abstract class AbstractIODriver implements IODriverInterface {
   constructor(protected name: string, protected config: AsyncImageStoreConfig) {}
@@ -11,6 +11,16 @@ export abstract class AbstractIODriver implements IODriverInterface {
       headers['If-Modified-Since'] = versionTag.value
     }
     return headers
+  }
+
+  protected getFileExtensionFromMimeType(mime: string): string|null {
+    const regex=/^image\/(.+)/
+    const res = regex.exec(mime)
+    if (!res) {
+      return null
+    }
+    const [_, extension ] = res
+    return extension
   }
 
   protected expiryFromMaxAge(maxAge_s: number): number {

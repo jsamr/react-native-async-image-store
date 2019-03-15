@@ -1,9 +1,10 @@
-import { ImageSource, IODriverInterface, RequestReport, URIVersionTag, HTTPHeaders, AsyncImageStoreConfig } from './types';
+import { ImageSource, IODriverInterface, RequestReport, URIVersionTag, HTTPHeaders, AsyncImageStoreConfig } from '/interfaces';
 export declare abstract class AbstractIODriver implements IODriverInterface {
     protected name: string;
     protected config: AsyncImageStoreConfig;
     constructor(name: string, config: AsyncImageStoreConfig);
     protected getHeadersFromVersionTag(versionTag: URIVersionTag): HTTPHeaders;
+    protected getFileExtensionFromMimeType(mime: string): string | null;
     protected expiryFromMaxAge(maxAge_s: number): number;
     protected getVersionTagFromHeaders(headers: {
         [key: string]: string;
