@@ -1,6 +1,6 @@
-import { StorageDriver } from './StorageDriver'
-import { IODriver } from './IODriver'
-import { FSKind, AsyncImageStoreConfig } from '../types'
+import { StorageDriver } from './drivers/StorageDriver'
+import { IODriver } from './drivers/IODriver'
+import { FSKind, AsyncImageStoreConfig } from './interfaces'
 
 export const defaultConfig: AsyncImageStoreConfig = {
   StorageDriver,

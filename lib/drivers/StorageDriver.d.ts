@@ -1,5 +1,5 @@
-import { StorageInstance, URICacheRegistry } from './types';
-export declare class Storage implements StorageInstance {
+import { StorageDriverInterface, URICacheRegistry } from "../interfaces";
+export declare class StorageDriver implements StorageDriverInterface {
     private name;
     constructor(name: string);
     getKey(): string;

@@ -1,5 +1,4 @@
-import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener, URIPatch, URICacheRegistry, ProgressCallback } from './types';
-import { defaultConfig } from './default-config';
+import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener, URIPatch, URICacheRegistry, ProgressCallback, AsyncImageStoreConfig } from "../interfaces";
 export declare type ProposeFunction = (patch: Partial<URICacheModel> | null) => void;
 export declare type Reactor = (event: URIEvent, propose: ProposeFunction, payload?: any) => Promise<void>;
 export declare type RegistryUpdateListener = (reg: URICacheRegistry) => Promise<void>;
@@ -18,7 +17,7 @@ export declare class State {
     private lastEvents;
     private registryListeners;
     private cacheStore;
-    constructor(config?: typeof defaultConfig);
+    constructor(config: AsyncImageStoreConfig);
     private getListenersForURI;
     private notifyURIListeners;
     private getURILens;

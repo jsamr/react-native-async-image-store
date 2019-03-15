@@ -1,9 +1,11 @@
 import RNFetchBlob from 'rn-fetch-blob'
-import { FileLocator } from './FileLocator'
-import { AsyncImageStoreConfig, ImageSource, URIVersionTag, IODriverInterface, RequestReport } from '../types'
+import { AsyncImageStoreConfig, ImageSource, URIVersionTag, IODriverInterface, RequestReport, HTTPHeaders } from '@src/interfaces'
 import { mergeDeepRight } from 'ramda'
-import { ImageDownloadFailure } from './ImageDownloadFailure'
-import { AbstractIODriver } from '../AbstractIODriver'
+import { FileLocator } from '@src/drivers/FileLocator'
+import { AbstractIODriver } from '@src/drivers/AbstractIODriver'
+import { ImageDownloadFailure } from '@src/errors/ImageDownloadFailure'
+import { MissingContentTypeException } from '@src/errors/MissingContentTypeException'
+import { ForbiddenMimeTypeException } from '@src/errors/ForbiddenMimeTypeException'
 
 export class IODriver extends AbstractIODriver implements IODriverInterface {
 
@@ -19,11 +21,24 @@ export class IODriver extends AbstractIODriver implements IODriverInterface {
     })
   }
 
+  private getImageFileExtension(uri: string, headers: HTTPHeaders) {
+    const mimeType: string|undefined = headers['Content-Type'] || headers['content-type']
+    if (!mimeType) {
+      throw new MissingContentTypeException(uri)
+    }
+    const extension = this.getFileExtensionFromMimeType(mimeType)
+    if (!extension) {
+      throw new ForbiddenMimeTypeException(uri, mimeType)
+    }
+  }
+
   async saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport> {
     // Override default cache-control
     const headers = mergeDeepRight(userHeaders, { 'Cache-Control': 'max-age=31536000' })
     try {
       const response = await this.prepareFetch(uri).fetch('GET', uri, headers)
+      console.info(response.respInfo.headers)
+      // Content-Type = image/jpeg
       const error = response.respInfo.status >= 400 ? new ImageDownloadFailure(uri, response.respInfo.status) : null
       return {
         uri,
