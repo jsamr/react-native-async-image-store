@@ -24,6 +24,7 @@ export class IODriver extends AbstractIODriver implements IODriverInterface {
     const headers = mergeDeepRight(userHeaders, { 'Cache-Control': 'max-age=31536000' })
     try {
       const response = await this.prepareFetch(uri).fetch('GET', uri, headers)
+      console.info(response.respInfo.headers)
       const error = response.respInfo.status >= 400 ? new ImageDownloadFailure(uri, response.respInfo.status) : null
       return {
         uri,
