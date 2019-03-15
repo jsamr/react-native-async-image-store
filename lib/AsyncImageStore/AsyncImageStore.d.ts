@@ -1,8 +1,8 @@
-import { AsyncImageStoreConfig, ImageSource, URIEvent, URIEventListener, ProgressCallback } from './types';
+import { AsyncImageStoreConfig, ImageSource, URIEvent, URIEventListener, ProgressCallback } from '../types';
 export declare type Target = string | ImageSource;
 export declare class AsyncImageStore {
     private name;
-    private fetcher;
+    private iodriver;
     private state;
     private mounted;
     private config;
