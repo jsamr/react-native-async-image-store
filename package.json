@@ -23,10 +23,12 @@
     "@types/invariant": "^2.2.29",
     "@types/jest": "^23.3.13",
     "@types/ramda": "^0.25.47",
+    "jest": "^24.5.0",
     "react": "^16.8.1",
     "react-native": "^0.58.4",
     "rn-fetch-blob": "^0.10.15",
     "ts-essentials": "^1.0.2",
+    "ts-jest": "^24.0.0",
     "tslint": "^5.12.1",
     "tslint-config-airbnb": "^5.11.1",
     "tslint-react": "^3.6.0",
@@ -35,7 +37,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "install-peer": "yarn add --peer react react-native rn-fetch-blob @types/react-native @types/react"
+    "test": "jest"
   },
   "peerDependencies": {
     "react": "*",
@@ -50,12 +52,10 @@
     "buffer": "^5.2.1",
     "es6-error": "^4.1.1",
     "invariant": "^2.2.4",
-    "jest": "^23.6.0",
     "p-debounce": "^1.0.0",
     "p-throttle": "^2.1.0",
     "ramda": "^0.26.1",
-    "ramda-adjunct": "^2.13.0",
-    "ts-jest": "^23.10.5"
+    "ramda-adjunct": "^2.13.0"
   },
   "jest": {
     "roots": [
