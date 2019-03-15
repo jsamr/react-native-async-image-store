@@ -1,3 +1,3 @@
 export * from './AsyncImageStore'
-export * from './types'
-export { Storage } from './Storage'
+export * from '../types'
+export { StorageDriver } from './StorageDriver'

@@ -2,15 +2,15 @@
 // tslint:disable:no-empty
 
 import { State, Reactor, DEBOUNCE_DELAY } from '../State'
-import { URIEvent, URICacheRegistry } from '../types'
+import { URIEvent, URICacheRegistry } from '../../types'
 
 describe('State class', () => {
   describe('updateURIModel method', () => {
-    it('should exactly update changed fields', () => {
+    it('should exactly update changed fields', async () => {
       const state = new State()
       const uri = 'XXXX'
       state.getLastURIEvent(uri)
-      state.updateURIModel(uri, { fileExists: true })
+      await state.updateURIModel(uri, { fileExists: true })
       const event = state.getLastURIEvent(uri)
       expect(event.nextModel.fileExists).toEqual(true)
       expect(event.nextModel.fetching).toEqual(false)

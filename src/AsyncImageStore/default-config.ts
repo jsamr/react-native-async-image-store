@@ -1,10 +1,10 @@
-import { Storage } from './Storage'
-import { StorageConstructor, FSKind } from './types'
+import { StorageDriver } from './StorageDriver'
+import { IODriver } from './IODriver'
+import { FSKind, AsyncImageStoreConfig } from '../types'
 
-declare const __DEV__: boolean
-
-export const defaultConfig = {
-  Storage: Storage as StorageConstructor,
+export const defaultConfig: AsyncImageStoreConfig = {
+  StorageDriver,
+  IODriver,
   debug: __DEV__,
   defaultMaxAge: 86000,
   autoRemoveStaleImages: false,

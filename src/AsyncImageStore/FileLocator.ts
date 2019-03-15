@@ -1,10 +1,9 @@
 import RNFetchBlob from 'rn-fetch-blob'
 import { Buffer } from 'buffer'
-import { defaultConfig } from './default-config'
-import { AsyncImageStoreConfig } from './types'
+import { AsyncImageStoreConfig } from '../types'
 
 export class FileLocator {
-  constructor(private storeName: string, private config: typeof defaultConfig & AsyncImageStoreConfig) {}
+  constructor(private storeName: string, private config: AsyncImageStoreConfig) {}
 
   public get baseDir() {
     const dir = this.config.fsKind === 'CACHE' ?

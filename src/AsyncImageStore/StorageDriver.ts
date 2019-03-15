@@ -1,7 +1,7 @@
 import { AsyncStorage } from 'react-native'
-import { StorageInstance, URICacheRegistry } from './types'
+import { StorageDriverInterface, URICacheRegistry } from '../types'
 
-export class Storage implements StorageInstance {
+export class StorageDriver implements StorageDriverInterface {
   constructor(private name: string) {}
 
   public getKey(): string {
@@ -14,8 +14,7 @@ export class Storage implements StorageInstance {
       return null
     }
     try {
-      const registry = JSON.parse(registryStr) as URICacheRegistry
-      return registry
+      return JSON.parse(registryStr) as URICacheRegistry
     } catch (e) {
       await this.clear()
     }

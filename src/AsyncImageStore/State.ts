@@ -1,4 +1,4 @@
-import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch, URICacheRegistry, ProgressCallback } from './types'
+import { URICacheModel, URIEvent, URICommandType, URICacheFileState, URICacheSyncState, URICacheState, URIEventListener , URIEventType, URIPatch, URICacheRegistry, ProgressCallback, AsyncImageStoreConfig } from '../types'
 import { mergePath } from 'ramda-adjunct'
 import { lensPath, lensProp, set, equals, view, assocPath } from 'ramda'
 import pdebounce from 'p-debounce'
@@ -71,7 +71,7 @@ export class State {
     registry: {}
   }
 
-  constructor(config: typeof defaultConfig = defaultConfig) {
+  constructor(config: AsyncImageStoreConfig = defaultConfig) {
     this.updateURIModel = this.updateURIModel.bind(this)
     this.updateNetworkModel = this.updateNetworkModel.bind(this)
     // Throttle dispatch commands to prevent I/O and CPU obstruction

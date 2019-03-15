@@ -4,7 +4,7 @@ export interface AsyncImageStoreConfig {
    * 
    * **Default**: `__DEV__`
    */
-  debug?: boolean,
+  debug: boolean
   /**
    * 
    * This value will be used when no `Cache-control: max-age` directive or `Expires` header have been given in the image response.
@@ -14,7 +14,7 @@ export interface AsyncImageStoreConfig {
    * 
    * **Default**: `84000` seconds (1 day)
    */
-  defaultMaxAge?: number
+  defaultMaxAge: number
   /**
    * This value will override any `Cache-control: max-age` directive or `Expires` header in the image response.
    * `Infinity` can be used to denote an **immutable**, never-expire policy.
@@ -30,7 +30,7 @@ export interface AsyncImageStoreConfig {
    * 
    * **Default**: `false`
    */
-  autoRemoveStaleImages?: boolean
+  autoRemoveStaleImages: boolean
   /**
    * Which kind of file-system should be used.
    * 
@@ -41,37 +41,59 @@ export interface AsyncImageStoreConfig {
    * 
    * **Default**: `PERMANENT`
    */
-  fsKind?: FSKind
+  fsKind: FSKind
   /**
    * The maximum number of I/O operations per second handled by one Store at a time.
    * This is a balance between operation speed and JS thread obstruction.
    * 
    * **Default**: `10`
    */
-  ioThrottleFrequency?: number
+  ioThrottleFrequency: number
   /**
-   * A `class` which produces `StorageInterface` instances.
-   * This class is used to instanciate a storage instance which get called to persist meta-info updates.
+   * A `class` which produces `StorageDriverInterface` instances.
+   * This driver is used to persist meta-information about updates.
    * 
    * **Default**: The default implementation uses `AsyncStorage`
    * 
-   * @see StorageInstance
-   * @see StorageConstructor
+   * @see StorageDriverInterface
+   * @see StorageDriverClass
    * @see URICacheRegistry
    * 
    */
-  Storage?: StorageConstructor<any>
+  StorageDriver: StorageDriverClass<any>
+  /**
+   * A `class` which produces `IODriverInterface` instances.
+   * This driver is used to fetch, store, delete and check images existence.
+   * 
+   * **Default**: The default implementation uses `RNFetchBlob`
+   * 
+   * @see IODriverInterface
+   * @see IODriverClass
+   * @see AbstractIODriver
+   * 
+   */
+  IODriver: IODriverClass<any>
 }
 
 export type FSKind = 'CACHE' | 'PERMANENT'
 
-export interface StorageInstance {
+export interface IODriverInterface {
+  saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport>
+  revalidateImage({ uri, headers }: ImageSource, versionTag: URIVersionTag): Promise<RequestReport>
+  imageExists({ uri }: ImageSource): Promise<boolean>
+  deleteImage(src: ImageSource): Promise<void>
+  deleteCacheRoot(): Promise<void>
+}
+
+export interface StorageDriverInterface {
   load(): Promise<URICacheRegistry|null>
   save(registry: URICacheRegistry): Promise<void>
   clear(): Promise<void>
 }
 
-export type StorageConstructor<C extends StorageInstance = StorageInstance> = new(name: string) => C
+export type IODriverClass<C extends IODriverInterface> = new(name: string, config: AsyncImageStoreConfig) => IODriverInterface
+
+export type StorageDriverClass<C extends StorageDriverInterface = StorageDriverInterface> = new(name: string) => C
 
 export type ProgressCallback = (event: URIEvent, currentIndex: number, total: number) => void
 
@@ -82,6 +104,14 @@ export interface HTTPHeaders {
 export interface ImageSource {
   uri: string,
   headers?: HTTPHeaders
+}
+
+export interface RequestReport {
+  uri: string
+  expires: number
+  error: Error|null
+  versionTag: URIVersionTag | null
+  path: string
 }
 
 export interface URIVersionTag {

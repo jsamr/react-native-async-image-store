@@ -1,6 +1,6 @@
 import invariant from 'invariant'
-import { AsyncImageStoreConfig, ImageSource, URIPatch, URIEvent, HTTPHeaders, URICacheState, URIEventListener, URICommandType, StorageInstance, ProgressCallback } from './types'
-import { IODriver, RequestReport } from './IODriver'
+import { AsyncImageStoreConfig, ImageSource, URIPatch, URIEvent, HTTPHeaders, URICacheState, URIEventListener, URICommandType, StorageDriverInterface, ProgressCallback, RequestReport } from '../types'
+import { IODriver } from './IODriver'
 import { Platform } from 'react-native'
 import { State, ProposeFunction } from './State'
 import { defaultConfig } from './default-config'
@@ -51,11 +51,11 @@ function normalizeUserConf(config: Partial<AsyncImageStoreConfig>): Partial<Asyn
 }
 
 export class AsyncImageStore {
-  private fetcher: IODriver
+  private iodriver: IODriver
   private state: State
   private mounted: boolean = false
   private config: AsyncImageStoreConfig
-  private storage: StorageInstance
+  private storage: StorageDriverInterface
 
   constructor(private name: string, userConfig: Partial<AsyncImageStoreConfig>) {
     invariant(name !== '', 'AsyncImageStore: store name cannot be empty.')
@@ -64,11 +64,11 @@ export class AsyncImageStore {
     const config = {
       ...defaultConfig,
       ...normalizeUserConf(userConfig)
-    }
+    } as AsyncImageStoreConfig
     this.config = config
-    this.fetcher = new IODriver(name, config)
+    this.iodriver = new IODriver(name, config)
     this.state = new State(config)
-    this.storage = new config.Storage(name)
+    this.storage = new config.StorageDriver(name)
     this.state.registerCommandReactor('PRELOAD', this.onPreload.bind(this))
     this.state.registerCommandReactor('REVALIDATE', this.onRevalidate.bind(this))
     this.state.registerCommandReactor('DELETE', this.onDelete.bind(this))
@@ -94,7 +94,7 @@ export class AsyncImageStore {
       preloadProposal.headers = headers
     }
     propose(preloadProposal)
-    const report = await this.fetcher.saveImage(model)
+    const report = await this.iodriver.saveImage(model)
     propose(reportToProposal(report))
     this.logReport(report, uri)
   }
@@ -106,7 +106,7 @@ export class AsyncImageStore {
       this.log(`File with origin ${model.uri} is unregistered; preload must be invoked first; ignoring revalidation.`)
       return
     }
-    const exists = await this.fetcher.imageExists(model)
+    const exists = await this.iodriver.imageExists(model)
     if (exists === false) {
       propose({ fileExists: false })
       if (state.networkState === 'AVAILABLE') {
@@ -131,8 +131,8 @@ export class AsyncImageStore {
       }
       propose(preloadProposal)
       const report = model.versionTag && exists ?
-        await this.fetcher.revalidateImage(model, model.versionTag) :
-        await this.fetcher.saveImage(model)
+        await this.iodriver.revalidateImage(model, model.versionTag) :
+        await this.iodriver.saveImage(model)
       propose(reportToProposal(report))
       this.logReport(report, model.uri)
     }
@@ -140,7 +140,7 @@ export class AsyncImageStore {
 
   private async onDelete(event: URIEvent, propose: ProposeFunction) {
     propose(null)
-    await this.fetcher.deleteImage(event.nextModel)
+    await this.iodriver.deleteImage(event.nextModel)
   }
 
   private logReport(report: RequestReport, uri: string) {
@@ -373,7 +373,7 @@ export class AsyncImageStore {
       await this.unmount()
     }
     await this.storage.clear()
-    await this.fetcher.deleteCacheRoot()
+    await this.iodriver.deleteCacheRoot()
   }
 }
 
