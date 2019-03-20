@@ -1,5 +1,5 @@
-import { AsyncImageStoreConfig, ImageSource, URIVersionTag, IODriverInterface, RequestReport } from '/interfaces';
-import { AbstractIODriver } from '../AbstractIODriver';
+import { AsyncImageStoreConfig, ImageSource, URIVersionTag, IODriverInterface, RequestReport } from "../interfaces";
+import { AbstractIODriver } from "./AbstractIODriver";
 export declare class IODriver extends AbstractIODriver implements IODriverInterface {
     private fileLocator;
     constructor(name: string, config: AsyncImageStoreConfig);

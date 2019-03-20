@@ -1,11 +1,11 @@
 import RNFetchBlob from 'rn-fetch-blob'
-import { FileLocator } from './FileLocator'
-import { AsyncImageStoreConfig, ImageSource, URIVersionTag, IODriverInterface, RequestReport, HTTPHeaders } from '/interfaces'
+import { AsyncImageStoreConfig, ImageSource, URIVersionTag, IODriverInterface, RequestReport, HTTPHeaders } from '@src/interfaces'
 import { mergeDeepRight } from 'ramda'
-import { AbstractIODriver } from '../AbstractIODriver'
-import { ImageDownloadFailure } from '/errors/ImageDownloadFailure'
-import { MissingContentTypeException } from '/errors/MissingContentTypeException'
-import { ForbiddenMimeTypeException } from '/errors/ForbiddenMimeTypeException'
+import { FileLocator } from '@src/drivers/FileLocator'
+import { AbstractIODriver } from '@src/drivers/AbstractIODriver'
+import { ImageDownloadFailure } from '@src/errors/ImageDownloadFailure'
+import { MissingContentTypeException } from '@src/errors/MissingContentTypeException'
+import { ForbiddenMimeTypeException } from '@src/errors/ForbiddenMimeTypeException'
 
 export class IODriver extends AbstractIODriver implements IODriverInterface {
 

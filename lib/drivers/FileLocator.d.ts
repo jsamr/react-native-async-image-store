@@ -1,4 +1,4 @@
-import { AsyncImageStoreConfig } from '../types';
+import { AsyncImageStoreConfig } from "../interfaces";
 export declare class FileLocator {
     private storeName;
     private config;

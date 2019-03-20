@@ -12,10 +12,9 @@
       "downlevelIteration": true,
       "baseUrl": "./src",
       "paths": {
-        "/errors/*": ["errors/*"],
-        "/interfaces": ["interfaces/index.ts"]
+        "@src/*": ["*"]
       }
     },
     "include": ["src"],
-    "exclude": ["node_modules", "**/__tests__/*"]
+    "exclude": ["node_modules"]
   }

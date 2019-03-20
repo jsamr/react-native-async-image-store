@@ -1,5 +1,5 @@
 import { AsyncStorage } from 'react-native'
-import { StorageDriverInterface, URICacheRegistry } from '../types'
+import { StorageDriverInterface, URICacheRegistry } from '@src/interfaces'
 
 export class StorageDriver implements StorageDriverInterface {
   constructor(private name: string) {}

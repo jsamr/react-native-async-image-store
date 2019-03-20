@@ -1,6 +1,6 @@
 import RNFetchBlob from 'rn-fetch-blob'
 import { Buffer } from 'buffer'
-import { AsyncImageStoreConfig } from '../types'
+import { AsyncImageStoreConfig } from '@src/interfaces'
 
 export class FileLocator {
   constructor(private storeName: string, private config: AsyncImageStoreConfig) {}

@@ -1,4 +1,4 @@
-import { ImageSource, IODriverInterface, RequestReport, URIVersionTag, HTTPHeaders, AsyncImageStoreConfig } from '/interfaces';
+import { ImageSource, IODriverInterface, RequestReport, URIVersionTag, HTTPHeaders, AsyncImageStoreConfig } from "../interfaces";
 export declare abstract class AbstractIODriver implements IODriverInterface {
     protected name: string;
     protected config: AsyncImageStoreConfig;

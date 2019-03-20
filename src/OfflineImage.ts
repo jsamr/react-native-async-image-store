@@ -1,7 +1,8 @@
 import React, { ComponentType, PureComponent, Component } from 'react'
 import { ImageProps, Image, ImageRequireSource, ActivityIndicator, ImageSourcePropType, StyleProp } from 'react-native'
 import invariant from 'invariant'
-import { AsyncImageStore, getStoreByName, URIEvent, ImageSource, URICacheFileState, URICacheSyncState } from './AsyncImageStore'
+import { AsyncImageStore, getStoreByName } from './AsyncImageStore'
+import { URIEvent, ImageSource, URICacheFileState, URICacheSyncState } from './interfaces'
 
 export interface MinimalImageComponentProps {
   source?: ImageSourcePropType

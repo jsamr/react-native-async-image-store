@@ -19,36 +19,46 @@
     "cache"
   ],
   "devDependencies": {
+    "@babel/core": "^7.4.0",
+    "@babel/preset-typescript": "^7.3.3",
+    "@babel/runtime": "^7.4.0",
     "@types/es6-error": "^4.0.2",
     "@types/invariant": "^2.2.29",
     "@types/jest": "^23.3.13",
     "@types/ramda": "^0.25.47",
+    "@zerollup/ts-transform-paths": "^1.7.0",
+    "babel-jest": "^24.5.0",
+    "babel-preset-react-native": "^5.0.2",
     "jest": "^24.5.0",
+    "metro-react-native-babel-preset": "^0.53.1",
     "react": "^16.8.1",
-    "react-native": "^0.58.4",
+    "react-native": "^0.59.1",
+    "react-native-fs": "^2.13.3",
+    "rimraf": "^2.6.3",
     "rn-fetch-blob": "^0.10.15",
     "ts-essentials": "^1.0.2",
-    "ts-jest": "^24.0.0",
     "tslint": "^5.12.1",
     "tslint-config-airbnb": "^5.11.1",
     "tslint-react": "^3.6.0",
     "tslint-react-recommended": "^1.0.15",
+    "ttypescript": "^1.5.6",
     "typescript": "^3.2.4"
   },
   "scripts": {
-    "build": "tsc --project .",
+    "build": "rimraf lib; ttsc --project ./tsconfig-build.json",
     "test": "jest"
   },
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
-    "rn-fetch-blob": "~0.10"
+    "react-native-fs": "^2"
   },
   "dependencies": {
     "@types/p-debounce": "^1.0.0",
     "@types/p-throttle": "^1.1.0",
     "@types/react": "^16.8.2",
     "@types/react-native": "^0.57.40",
+    "@zerollup/rollup-preset-ts": "^1.7.0",
     "buffer": "^5.2.1",
     "es6-error": "^4.1.1",
     "invariant": "^2.2.4",
@@ -56,28 +66,5 @@
     "p-throttle": "^2.1.0",
     "ramda": "^0.26.1",
     "ramda-adjunct": "^2.13.0"
-  },
-  "jest": {
-    "roots": [
-      "<rootDir>/src"
-    ],
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx"
-    ],
-    "transform": {
-      "\\.(ts|tsx)$": "ts-jest"
-    },
-    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
-    "testPathIgnorePatterns": [
-      "\\.snap$",
-      "<rootDir>/node_modules/"
-    ],
-    "cacheDirectory": ".jest/cache",
-    "globals": {
-      "__DEV__": true
-    }
   }
 }
