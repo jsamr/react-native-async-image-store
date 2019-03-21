@@ -1,35 +1,26 @@
 import RNFetchBlob from 'rn-fetch-blob'
-import { AsyncImageStoreConfig, ImageSource, URIVersionTag, IODriverInterface, RequestReport, HTTPHeaders } from '@src/interfaces'
+import {
+    AsyncImageStoreConfig,
+    ImageSource,
+    URIVersionTag,
+    IODriverInterface,
+    RequestReport,
+    FileLocatorInterface
+} from '@src/interfaces'
 import { mergeDeepRight } from 'ramda'
-import { FileLocator } from '@src/drivers/FileLocator'
 import { AbstractIODriver } from '@src/drivers/AbstractIODriver'
 import { ImageDownloadFailure } from '@src/errors/ImageDownloadFailure'
-import { MissingContentTypeException } from '@src/errors/MissingContentTypeException'
-import { ForbiddenMimeTypeException } from '@src/errors/ForbiddenMimeTypeException'
 
 export class IODriver extends AbstractIODriver implements IODriverInterface {
 
-  private fileLocator: FileLocator
-  constructor(name: string, config: AsyncImageStoreConfig) {
-    super(name, config)
-    this.fileLocator = new FileLocator(name, config)
+  constructor(name: string, config: AsyncImageStoreConfig, fileLocator: FileLocatorInterface) {
+    super(name, config, fileLocator)
   }
 
   private prepareFetch(uri: string) {
     return RNFetchBlob.config({
-      path: this.fileLocator.getURIFilename(uri)
+      path: this.fileLocator.getTempFilenameFromURI(uri)
     })
-  }
-
-  private getImageFileExtension(uri: string, headers: HTTPHeaders) {
-    const mimeType: string|undefined = headers['Content-Type'] || headers['content-type']
-    if (!mimeType) {
-      throw new MissingContentTypeException(uri)
-    }
-    const extension = this.getFileExtensionFromMimeType(mimeType)
-    if (!extension) {
-      throw new ForbiddenMimeTypeException(uri, mimeType)
-    }
   }
 
   async saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport> {
@@ -37,14 +28,20 @@ export class IODriver extends AbstractIODriver implements IODriverInterface {
     const headers = mergeDeepRight(userHeaders, { 'Cache-Control': 'max-age=31536000' })
     try {
       const response = await this.prepareFetch(uri).fetch('GET', uri, headers)
-      console.info(response.respInfo.headers)
       // Content-Type = image/jpeg
+      const downloadPath = this.fileLocator.getTempFilenameFromURI(uri)
+      let path = downloadPath
       const error = response.respInfo.status >= 400 ? new ImageDownloadFailure(uri, response.respInfo.status) : null
+      if (!error) {
+        path += '.' + this.getImageFileExtensionFromHeaders(uri, response.respInfo.headers)
+        await RNFetchBlob.fs.mv(downloadPath, path)
+        console.info(`Moved file from ${downloadPath} to ${path}`)
+      }
       return {
         uri,
         error,
+        path,
         expires: this.config.overrideMaxAge ? this.expiryFromMaxAge(this.config.overrideMaxAge) : this.getExpirationFromHeaders(response.respInfo.headers),
-        path: this.fileLocator.getURIFilename(uri),
         versionTag: this.getVersionTagFromHeaders(response.respInfo.headers)
       }
     } catch (error) {
@@ -52,7 +49,7 @@ export class IODriver extends AbstractIODriver implements IODriverInterface {
         uri,
         error: new ImageDownloadFailure(uri, error.status),
         expires: 0,
-        path: this.fileLocator.getURIFilename(uri),
+        path: this.fileLocator.getTempFilenameFromURI(uri),
         versionTag: null
       }
     }
@@ -68,14 +65,14 @@ export class IODriver extends AbstractIODriver implements IODriverInterface {
   }
 
   async imageExists({ uri }: ImageSource): Promise<boolean> {
-    return RNFetchBlob.fs.exists(this.fileLocator.getURIFilename(uri))
+    return RNFetchBlob.fs.exists(this.fileLocator.getLocalPathFromURI(uri))
   }
 
   async deleteImage(src: ImageSource): Promise<void> {
     const { uri } = src
-    const file = this.fileLocator.getURIFilename(uri)
+    const file = this.fileLocator.getLocalPathFromURI(uri)
     if (await this.imageExists(src)) {
-      await RNFetchBlob.fs.unlink(this.fileLocator.getURIFilename(uri))
+      await RNFetchBlob.fs.unlink(this.fileLocator.getLocalPathFromURI(uri))
       this.log(`Local file '${file}' from origin ${uri} successfully deleted`)
     } else {
       this.log(`Local file '${file}' from origin ${uri} was targeted for delete but it does not exist`)
@@ -83,6 +80,6 @@ export class IODriver extends AbstractIODriver implements IODriverInterface {
   }
 
   async deleteCacheRoot(): Promise<void> {
-    return RNFetchBlob.fs.unlink(this.fileLocator.baseDir)
+    return RNFetchBlob.fs.unlink(this.fileLocator.getBaseDir())
   }
 }

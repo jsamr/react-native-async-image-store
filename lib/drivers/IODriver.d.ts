@@ -1,10 +1,8 @@
-import { AsyncImageStoreConfig, ImageSource, URIVersionTag, IODriverInterface, RequestReport } from "../interfaces";
+import { AsyncImageStoreConfig, ImageSource, URIVersionTag, IODriverInterface, RequestReport, FileLocatorInterface } from "../interfaces";
 import { AbstractIODriver } from "./AbstractIODriver";
 export declare class IODriver extends AbstractIODriver implements IODriverInterface {
-    private fileLocator;
-    constructor(name: string, config: AsyncImageStoreConfig);
+    constructor(name: string, config: AsyncImageStoreConfig, fileLocator: FileLocatorInterface);
     private prepareFetch;
-    private getImageFileExtension;
     saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport>;
     revalidateImage({ uri, headers }: ImageSource, versionTag: URIVersionTag): Promise<RequestReport>;
     imageExists({ uri }: ImageSource): Promise<boolean>;

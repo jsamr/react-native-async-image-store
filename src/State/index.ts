@@ -1,20 +1,24 @@
 import {
-  URICacheModel,
-  URIEvent,
-  URICommandType,
-  URICacheFileState,
-  URICacheSyncState,
-  URICacheState,
-  URIEventListener,
-  URIEventType,
-  URIPatch,
-  URICacheRegistry,
-  ProgressCallback,
-  AsyncImageStoreConfig } from '@src/interfaces'
+    AsyncImageStoreConfig,
+    ProgressCallback,
+    StateInterface,
+    URICacheFileState,
+    URICacheModel,
+    URICacheRegistry,
+    URICacheState,
+    URICacheSyncState,
+    URICommandType,
+    URIEvent,
+    URIEventListener,
+    URIEventType,
+    URIPatch
+} from '@src/interfaces'
 import { mergePath } from 'ramda-adjunct'
-import { lensPath, lensProp, set, equals, view, assocPath } from 'ramda'
+import { assocPath, equals, lensPath, lensProp, set, view } from 'ramda'
 import pdebounce from 'p-debounce'
 import pthrottle from 'p-throttle'
+import RNFetchBlob from 'rn-fetch-blob'
+import { Buffer } from 'buffer'
 
 export type ProposeFunction = (patch: Partial<URICacheModel>|null) => void
 export type Reactor = (event: URIEvent, propose: ProposeFunction, payload?: any) => Promise<void>
@@ -68,7 +72,7 @@ export function getInitialURICacheModel(uri: string): URICacheModel {
 
 export const DEBOUNCE_DELAY = 500
 
-export class State {
+export class State implements StateInterface {
   private reactors: Map<string, Reactor> = new Map()
   private listeners: Map<string, Set<URIEventListener>> = new Map()
   private lastEvents: Map<string, URIEvent> = new Map()
@@ -79,7 +83,7 @@ export class State {
     registry: {}
   }
 
-  constructor(config: AsyncImageStoreConfig) {
+  constructor(private config: AsyncImageStoreConfig, private storeName: string) {
     this.updateURIModel = this.updateURIModel.bind(this)
     this.updateNetworkModel = this.updateNetworkModel.bind(this)
     // Throttle dispatch commands to prevent I/O and CPU obstruction
@@ -121,11 +125,7 @@ export class State {
     return lensPath(path)
   }
 
-  /**
-   * 
-   * @param uri Initialize the URI model if unregistered.
-   */
-  public initURIModel(uri: string) {
+  initURIModel(uri: string) {
     if (!this.lastEvents.get(uri)) {
       const lens = this.getURILens(uri)
       this.cacheStore = set(lens, getInitialURICacheModel(uri))(this.cacheStore)
@@ -140,39 +140,25 @@ export class State {
     }
   }
 
-  /**
-   * Add a hook on registry updates.
-   * 
-   * **Info**: updates are debounced every 400ms, and limitted to one running promise per listener.
-   * 
-   * @param listener 
-   */
-  public addRegistryUpdateListener(listener: RegistryUpdateListener) {
+  addRegistryUpdateListener(listener: RegistryUpdateListener) {
     const debouncedListener = pdebounce(listener, DEBOUNCE_DELAY)
     this.registryListeners.add(debouncedListener)
   }
 
-  /**
-   * Asynchronously update the given URI model.
-   * 
-   * @param uri
-   * @param patch 
-   * @param type 
-   */
-  public async updateURIModel(uri: string, patch: URIPatch|null): Promise<void> {
+  async updateURIModel(uri: string, patch: URIPatch | null): Promise<void> {
     const path = ['registry', uri]
     const uriLens = lensPath(path)
     const viewURI = view(uriLens)
     const next: CacheStore = patch ?
-        mergePath(path as any, patch, this.cacheStore) as CacheStore :
-        assocPath(path, null, this.cacheStore)
+            mergePath(path as any, patch, this.cacheStore) as CacheStore :
+            assocPath(path, null, this.cacheStore)
     if (!equals(viewURI(next), viewURI(this.cacheStore))) {
       this.cacheStore = next
       await this.notifyURIListeners(uri, viewURI(next) as URICacheModel)
     }
   }
 
-  public async updateNetworkModel(networkAvailable: boolean): Promise<void> {
+  async updateNetworkModel(networkAvailable: boolean): Promise<void> {
     const networkLens = lensProp('networkAvailable')
     if (networkAvailable !== this.cacheStore.networkAvailable) {
       this.cacheStore = set(networkLens, networkAvailable, this.cacheStore)
@@ -184,48 +170,44 @@ export class State {
     }
   }
 
-  /**
-   * Register a function which will be called when an event is dispatched to a specific URI.
-   * 
-   * @param commandName
-   * @param reactor 
-   */
-  public registerCommandReactor<C extends string, P>(commandName: C, reactor: Reactor) {
+  registerCommandReactor<C extends string, P>(commandName: C, reactor: Reactor) {
     this.reactors.set(commandName, reactor)
   }
 
-  public getURIModel(uri: string): URICacheModel {
+  getURIModel(uri: string): URICacheModel {
     const lens = this.getURILens(uri)
     return view(lens, this.cacheStore)
   }
 
-  /**
-   * Asynchronously add a listener and return a promise resolving to the last event associated with the given URI.
-   * If no URI has been registered yet, the returned event is of type `URI_INIT`.
-   * 
-   * @param uri 
-   * @param listener 
-   * @return A `URIEvent` containing the last state and model associated with this URI.
-   */
-  public addListener(uri: string, listener: URIEventListener): URIEvent {
+  getLocalPathFromURI(uri: string): string {
+    const pathLens = lensProp('path')
+    return view(pathLens, this.getURIModel(uri))
+  }
+
+  getBaseDir() {
+    const dir = this.config.fsKind === 'CACHE' ?
+          RNFetchBlob.fs.dirs.CacheDir :
+          RNFetchBlob.fs.dirs.DocumentDir
+    return `${dir}/${this.storeName}`
+  }
+
+  getTempFilenameFromURI(uri: string) {
+    return `${this.getBaseDir()}/${Buffer.from(uri).toString('base64')}`
+  }
+
+  addListener(uri: string, listener: URIEventListener): URIEvent {
     const listeners = this.getListenersForURI(uri)
     const lastEvent = this.getLastURIEvent(uri)
     listeners.add(listener)
     return lastEvent
   }
 
-  /**
-   * Remove a listener.
-   * 
-   * @param uri 
-   * @param listener 
-   */
-  public removeListener(uri: string, listener: URIEventListener) {
+  removeListener(uri: string, listener: URIEventListener) {
     const listeners = this.getListenersForURI(uri)
     listeners.delete(listener)
   }
 
-  public getLastURIEvent(uri: string): URIEvent {
+  getLastURIEvent(uri: string): URIEvent {
     const lastEvent = this.lastEvents.get(uri)
     if (!lastEvent) {
       this.initURIModel(uri)
@@ -233,15 +215,7 @@ export class State {
     return this.lastEvents.get(uri) as URIEvent
   }
 
-    /**
-     * Dispatch a command to be applied to given URI.
-     * The returned promise resolves when the command has been applied.
-     * 
-     * @param uri 
-     * @param commandType 
-     * @param payload 
-     */
-  public async dispatchCommand(uri: string, commandType: URICommandType, payload?: any): Promise<URIEvent> {
+  async dispatchCommand(uri: string, commandType: URICommandType, payload?: any): Promise<URIEvent> {
     const reactor = this.reactors.get(commandType)
     const lastEvent = this.getLastURIEvent(uri)
     if (reactor) {
@@ -251,14 +225,7 @@ export class State {
     return lastEvent
   }
 
-    /**
-     * Dispatch a command to all registered URIs.
-     * 
-     * @param commandType
-     * @param payload
-     * @param onProgress
-     */
-  public async dispatchCommandToAll(commandType: URICommandType, payload?: any, onProgress?: ProgressCallback): Promise<URIEvent[]> {
+  async dispatchCommandToAll(commandType: URICommandType, payload?: any, onProgress?: ProgressCallback): Promise<URIEvent[]> {
     const events: URIEvent[] = []
     const properties = Object.getOwnPropertyNames(this.cacheStore.registry)
     let i = 0
@@ -271,14 +238,7 @@ export class State {
     return events
   }
 
-    /**
-     * Dispatch a command to all URIs models satisfying the given predicate.
-     * @param commandType
-     * @param predicate 
-     * @param payload
-     * @param onProgress
-     */
-  public async dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any, onProgress?: ProgressCallback): Promise<URIEvent[]> {
+  async dispatchCommandWhen(commandType: URICommandType, predicate: (state: URICacheState) => boolean, payload?: any, onProgress?: ProgressCallback): Promise<URIEvent[]> {
     const events: URIEvent[] = []
     const applicableEvents = Array.from(this.lastEvents.values()).filter(e => predicate(e.nextState))
     let i = 0
@@ -291,7 +251,7 @@ export class State {
     return events
   }
 
-  public async mount(initialRegistry: URICacheRegistry|null): Promise<void> {
+  async mount(initialRegistry: URICacheRegistry | null): Promise<void> {
     if (initialRegistry) {
       this.cacheStore.registry = initialRegistry
       for (const uri of Object.getOwnPropertyNames(initialRegistry)) {
@@ -307,7 +267,7 @@ export class State {
     }
   }
 
-  public async unmount(): Promise<void> {
+  async unmount(): Promise<void> {
     for (const [_uri, listener] of this.listeners) {
       listener.clear()
     }

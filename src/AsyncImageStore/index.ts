@@ -79,8 +79,8 @@ export class AsyncImageStore {
       ...normalizeUserConf(userConfig)
     } as AsyncImageStoreConfig
     this.config = config
-    this.iodriver = new IODriver(name, config)
-    this.state = new State(config)
+    this.state = new State(config, name)
+    this.iodriver = new IODriver(name, config, this.state)
     this.storage = new config.StorageDriver(name)
     this.state.registerCommandReactor('PRELOAD', this.onPreload.bind(this))
     this.state.registerCommandReactor('REVALIDATE', this.onRevalidate.bind(this))

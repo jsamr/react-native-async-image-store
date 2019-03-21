@@ -1,7 +1,17 @@
-import { ImageSource, IODriverInterface, RequestReport, URIVersionTag, HTTPHeaders, AsyncImageStoreConfig } from '@src/interfaces'
+import {
+    AsyncImageStoreConfig,
+    HTTPHeaders,
+    ImageSource,
+    IODriverInterface,
+    RequestReport,
+    URIVersionTag,
+    FileLocatorInterface
+} from '@src/interfaces'
+import { MissingContentTypeException } from '@src/errors/MissingContentTypeException'
+import { ForbiddenMimeTypeException } from '@src/errors/ForbiddenMimeTypeException'
 
 export abstract class AbstractIODriver implements IODriverInterface {
-  constructor(protected name: string, protected config: AsyncImageStoreConfig) {}
+  protected constructor(protected name: string, protected config: AsyncImageStoreConfig, protected fileLocator: FileLocatorInterface) {}
 
   protected getHeadersFromVersionTag(versionTag: URIVersionTag) {
     const headers: HTTPHeaders = {}
@@ -20,6 +30,18 @@ export abstract class AbstractIODriver implements IODriverInterface {
       return null
     }
     const [_, extension ] = res
+    return extension
+  }
+
+  protected getImageFileExtensionFromHeaders(uri: string, headers: HTTPHeaders): string {
+    const mimeType: string|undefined = headers['Content-Type'] || headers['content-type']
+    if (!mimeType) {
+      throw new MissingContentTypeException(uri)
+    }
+    const extension = this.getFileExtensionFromMimeType(mimeType)
+    if (!extension) {
+      throw new ForbiddenMimeTypeException(uri, mimeType)
+    }
     return extension
   }
 

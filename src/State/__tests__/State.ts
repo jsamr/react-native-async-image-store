@@ -3,12 +3,16 @@
 
 import { State, Reactor, DEBOUNCE_DELAY } from '../'
 import { URIEvent, URICacheRegistry } from '@src/interfaces'
-import { defaultConfig } from '../../default-config'
+import { defaultConfig } from '@src/default-config'
+
+function makeState() {
+  return new State(defaultConfig, 'ImageStore')
+}
 
 describe('State class', () => {
   describe('updateURIModel method', () => {
     it('should exactly update changed fields', async () => {
-      const state = new State(defaultConfig)
+      const state = makeState()
       const uri = 'XXXX'
       state.getLastURIEvent(uri)
       await state.updateURIModel(uri, { fileExists: true })
@@ -18,15 +22,24 @@ describe('State class', () => {
     })
     it('should handle null values', async () => {
       const uri = 'XXXX'
-      const state = new State(defaultConfig)
+      const state = makeState()
       await state.updateURIModel(uri, null)
       expect(state['cacheStore'].registry[uri]).toBeNull()
+    })
+  })
+  describe('getLocalPathFromURI', () => {
+    it('should return path from URI', async () => {
+      const uri = 'XXXX'
+      const path = '/a/b/c/eeee.jpg'
+      const state = makeState()
+      await state.updateURIModel(uri, { path })
+      expect(state.getLocalPathFromURI(uri)).toEqual(path)
     })
   })
   describe('addListener method', () => {
     it('should initialize URI model', async () => {
       const uri = 'XXXX'
-      const state = new State(defaultConfig)
+      const state = makeState()
       async function listener() {}
       state.addListener(uri, listener)
       const event = state.getLastURIEvent(uri)
@@ -39,7 +52,7 @@ describe('State class', () => {
         listener() {}
       }
       const spy = jest.spyOn(spiedObject, 'listener')
-      const state = new State(defaultConfig)
+      const state = makeState()
       state.addListener(uri, spy as any)
       await state.updateURIModel(uri, { fileExists: true })
       expect(spy).toHaveBeenCalledTimes(1)
@@ -52,7 +65,7 @@ describe('State class', () => {
         listener() {}
       }
       const spy = jest.spyOn(spiedObject, 'listener')
-      const state = new State(defaultConfig)
+      const state = makeState()
       state.addListener(uri, spy as any)
       state.removeListener(uri, spy as any)
       await state.updateURIModel(uri, { fileExists: true })
@@ -68,7 +81,7 @@ describe('State class', () => {
         }
       }
       const spy = jest.spyOn(spiedObject, 'listener')
-      const state = new State(defaultConfig)
+      const state = makeState()
       state.registerCommandReactor('PRELOAD', spy as any)
       await state.dispatchCommand(uri, 'PRELOAD')
       expect(spy).toHaveBeenCalledTimes(1)
@@ -86,7 +99,7 @@ describe('State class', () => {
         propose({ fileExists: true })
       }
       const spy = jest.spyOn(spiedObject, 'listener')
-      const state = new State(defaultConfig)
+      const state = makeState()
       state.addRegistryUpdateListener(spy as any)
       expect(state['registryListeners'].size).toBe(1)
       async function listener() {}
