@@ -1,6 +1,6 @@
 {
   "name": "react-native-async-image-store",
-  "version": "0.1.0",
+  "version": "0.10.0",
   "repository": "git@github.com:jsamr/react-native-async-image-store.git",
   "author": "Jules Randolph <jules.sam.randolph@gmail.com>",
   "license": "MIT",
@@ -22,6 +22,7 @@
     "@babel/core": "^7.4.0",
     "@babel/preset-typescript": "^7.3.3",
     "@babel/runtime": "^7.4.0",
+    "@react-native-community/async-storage": "^1.2.1",
     "@types/es6-error": "^4.0.2",
     "@types/invariant": "^2.2.29",
     "@types/jest": "^23.3.13",
@@ -33,7 +34,6 @@
     "metro-react-native-babel-preset": "^0.53.1",
     "react": "^16.8.1",
     "react-native": "^0.59.1",
-    "react-native-fs": "^2.13.3",
     "rimraf": "^2.6.3",
     "rn-fetch-blob": "^0.10.15",
     "ts-essentials": "^1.0.2",
@@ -51,7 +51,8 @@
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
-    "react-native-fs": "^2"
+    "rn-fetch-blob": "~0.10.15",
+    "@react-native-community/async-storage": "^1"
   },
   "dependencies": {
     "@types/p-debounce": "^1.0.0",

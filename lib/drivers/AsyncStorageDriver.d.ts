@@ -1,5 +1,5 @@
 import { StorageDriverInterface, URICacheRegistry } from "../interfaces";
-export declare class StorageDriver implements StorageDriverInterface {
+export declare class AsyncStorageDriver implements StorageDriverInterface {
     private name;
     constructor(name: string);
     getKey(): string;
