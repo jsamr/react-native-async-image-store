@@ -24,7 +24,8 @@ describe('State class', () => {
       const uri = 'XXXX'
       const state = makeState()
       await state.updateURIModel(uri, null)
-      expect(state['cacheStore'].registry[uri]).toBeNull()
+      expect(state['cacheStore'].registry[uri]).toBeUndefined()
+      expect(state['lastEvents'].get(uri)).toBeUndefined()
     })
   })
   describe('getLocalPathFromURI', () => {

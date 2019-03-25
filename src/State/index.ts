@@ -14,11 +14,12 @@ import {
     URIPatch
 } from '@src/interfaces'
 import { mergePath } from 'ramda-adjunct'
-import { assocPath, equals, lensPath, lensProp, set, view } from 'ramda'
+import { equals, lensPath, lensProp, set, view, dissocPath } from 'ramda'
 import pdebounce from 'p-debounce'
 import pthrottle from 'p-throttle'
 import RNFetchBlob from 'rn-fetch-blob'
 import { Buffer } from 'buffer'
+import invariant from 'invariant';
 
 export type ProposeFunction = (patch: Partial<URICacheModel>|null) => void
 export type Reactor = (event: URIEvent, propose: ProposeFunction, payload?: any) => Promise<void>
@@ -151,10 +152,14 @@ export class State implements StateInterface {
     const viewURI = view(uriLens)
     const next: CacheStore = patch ?
             mergePath(path as any, patch, this.cacheStore) as CacheStore :
-            assocPath(path, null, this.cacheStore)
+            dissocPath(path, this.cacheStore)
     if (!equals(viewURI(next), viewURI(this.cacheStore))) {
       this.cacheStore = next
       await this.notifyURIListeners(uri, viewURI(next) as URICacheModel)
+    }
+    if (patch === null) {
+      // remove event entry
+      this.lastEvents.delete(uri)
     }
   }
 
@@ -181,7 +186,9 @@ export class State implements StateInterface {
 
   getLocalPathFromURI(uri: string): string {
     const pathLens = lensProp('path')
-    return view(pathLens, this.getURIModel(uri))
+    const pathFromURI = view(pathLens, this.getURIModel(uri)) as string
+    invariant(pathFromURI !== undefined, 'the fetched URI has no matching model in registry')
+    return pathFromURI
   }
 
   getBaseDir() {

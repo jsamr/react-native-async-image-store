@@ -152,8 +152,8 @@ export class AsyncImageStore {
   }
 
   private async onDelete(event: URIEvent, propose: ProposeFunction) {
-    propose(null)
     await this.iodriver.deleteImage(event.nextModel)
+    propose(null)
   }
 
   private logReport(report: RequestReport, uri: string) {
