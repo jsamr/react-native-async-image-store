@@ -8,6 +8,7 @@ export declare class AsyncImageStore {
     private config;
     private storage;
     constructor(name: string, userConfig: Partial<AsyncImageStoreConfig>);
+    private initialize;
     private onPreload;
     private onRevalidate;
     private onDelete;

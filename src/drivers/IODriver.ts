@@ -80,6 +80,8 @@ export class IODriver extends AbstractIODriver implements IODriverInterface {
   }
 
   async deleteCacheRoot(): Promise<void> {
-    return RNFetchBlob.fs.unlink(this.fileLocator.getBaseDir())
+    if (await RNFetchBlob.fs.exists(this.fileLocator.getBaseDir())) {
+      return RNFetchBlob.fs.unlink(this.fileLocator.getBaseDir())
+    }
   }
 }

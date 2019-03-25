@@ -14,12 +14,12 @@ import {
     URIPatch
 } from '@src/interfaces'
 import { mergePath } from 'ramda-adjunct'
-import { equals, lensPath, lensProp, set, view, dissocPath } from 'ramda'
+import { equals, lensPath, lensProp, set, view, dissocPath, clone } from 'ramda'
 import pdebounce from 'p-debounce'
 import pthrottle from 'p-throttle'
 import RNFetchBlob from 'rn-fetch-blob'
 import { Buffer } from 'buffer'
-import invariant from 'invariant';
+import invariant from 'invariant'
 
 export type ProposeFunction = (patch: Partial<URICacheModel>|null) => void
 export type Reactor = (event: URIEvent, propose: ProposeFunction, payload?: any) => Promise<void>
@@ -71,6 +71,11 @@ export function getInitialURICacheModel(uri: string): URICacheModel {
   }
 }
 
+const initialCacheStore = {
+  networkAvailable: true,
+  registry: {}
+}
+
 export const DEBOUNCE_DELAY = 500
 
 export class State implements StateInterface {
@@ -79,10 +84,7 @@ export class State implements StateInterface {
   private lastEvents: Map<string, URIEvent> = new Map()
   private registryListeners: Set<RegistryUpdateListener> = new Set()
 
-  private cacheStore: CacheStore = {
-    networkAvailable: true,
-    registry: {}
-  }
+  private cacheStore: CacheStore = clone(initialCacheStore)
 
   constructor(private config: AsyncImageStoreConfig, private storeName: string) {
     this.updateURIModel = this.updateURIModel.bind(this)

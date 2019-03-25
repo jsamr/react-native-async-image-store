@@ -64,10 +64,13 @@ function normalizeUserConf(config: Partial<AsyncImageStoreConfig>): Partial<Asyn
 }
 
 export class AsyncImageStore {
+  // @ts-ignore
   private iodriver: IODriver
+  // @ts-ignore
   private state: State
   private mounted: boolean = false
   private config: AsyncImageStoreConfig
+  // @ts-ignore
   private storage: StorageDriverInterface
 
   constructor(private name: string, userConfig: Partial<AsyncImageStoreConfig>) {
@@ -79,12 +82,19 @@ export class AsyncImageStore {
       ...normalizeUserConf(userConfig)
     } as AsyncImageStoreConfig
     this.config = config
-    this.state = new State(config, name)
-    this.iodriver = new IODriver(name, config, this.state)
-    this.storage = new config.StorageDriver(name)
-    this.state.registerCommandReactor('PRELOAD', this.onPreload.bind(this))
-    this.state.registerCommandReactor('REVALIDATE', this.onRevalidate.bind(this))
-    this.state.registerCommandReactor('DELETE', this.onDelete.bind(this))
+    this.onDelete = this.onDelete.bind(this)
+    this.onPreload = this.onPreload.bind(this)
+    this.onRevalidate = this.onRevalidate.bind(this)
+    this.initialize()
+  }
+
+  private initialize() {
+    this.state = new State(this.config, this.name)
+    this.iodriver = new IODriver(this.name, this.config, this.state)
+    this.storage = new this.config.StorageDriver(this.name)
+    this.state.registerCommandReactor('PRELOAD', this.onPreload)
+    this.state.registerCommandReactor('REVALIDATE', this.onRevalidate)
+    this.state.registerCommandReactor('DELETE', this.onDelete)
   }
 
   private async onPreload(event: URIEvent, propose: ProposeFunction, headers?: HTTPHeaders): Promise<void> {
@@ -387,6 +397,7 @@ export class AsyncImageStore {
     }
     await this.storage.clear()
     await this.iodriver.deleteCacheRoot()
+    this.initialize()
   }
 }
 
