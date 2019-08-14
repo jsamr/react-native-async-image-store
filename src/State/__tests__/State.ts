@@ -2,11 +2,11 @@
 // tslint:disable:no-empty
 
 import { State, Reactor, DEBOUNCE_DELAY } from '../'
-import { URIEvent, URICacheRegistry } from '@src/interfaces'
+import { URIEvent, URICacheRegistry, AsyncImageStoreConfig } from '@src/interfaces'
 import { defaultConfig } from '@src/default-config'
 
 function makeState() {
-  return new State(defaultConfig, 'ImageStore')
+  return new State(defaultConfig as AsyncImageStoreConfig, 'ImageStore')
 }
 
 describe('State class', () => {
@@ -31,10 +31,10 @@ describe('State class', () => {
   describe('getLocalPathFromURI', () => {
     it('should return path from URI', async () => {
       const uri = 'XXXX'
-      const path = '/a/b/c/eeee.jpg'
+      const localURI = 'file:///a/b/c/eeee.jpg'
       const state = makeState()
-      await state.updateURIModel(uri, { path })
-      expect(state.getLocalPathFromURI(uri)).toEqual(path)
+      await state.updateURIModel(uri, { localURI })
+      expect(state.getLocalURIForRemoteURI(uri)).toEqual(localURI)
     })
   })
   describe('addListener method', () => {

@@ -1,2 +1,2 @@
-import { AsyncImageStoreConfig } from './interfaces';
-export declare const defaultConfig: AsyncImageStoreConfig;
+import { BaseAsyncImageStoreConfig } from './interfaces';
+export declare const defaultConfig: BaseAsyncImageStoreConfig;

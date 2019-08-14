@@ -11,13 +11,13 @@ import {
     URIEvent,
     URIEventListener,
     URIEventType,
-    URIPatch
+    URIPatch,
+    FileSystemDriverInterface
 } from '@src/interfaces'
+import { joinUri } from '@src/utils'
 import { mergePath } from 'ramda-adjunct'
 import { equals, lensPath, lensProp, set, view, dissocPath, clone } from 'ramda'
 import pdebounce from 'p-debounce'
-import pthrottle from 'p-throttle'
-import RNFetchBlob from 'rn-fetch-blob'
 import { Buffer } from 'buffer'
 import invariant from 'invariant'
 
@@ -65,7 +65,6 @@ export function getInitialURICacheModel(uri: string): URICacheModel {
     fetching: false,
     fileExists: false,
     localURI: '',
-    path: '',
     registered: false,
     versionTag: null
   }
@@ -83,15 +82,17 @@ export class State implements StateInterface {
   private listeners: Map<string, Set<URIEventListener>> = new Map()
   private lastEvents: Map<string, URIEvent> = new Map()
   private registryListeners: Set<RegistryUpdateListener> = new Set()
+  private fileSystem: FileSystemDriverInterface
 
   private cacheStore: CacheStore = clone(initialCacheStore)
 
-  constructor(private config: AsyncImageStoreConfig, private storeName: string) {
+  constructor(config: AsyncImageStoreConfig, storeName: string) {
     this.updateURIModel = this.updateURIModel.bind(this)
     this.updateNetworkModel = this.updateNetworkModel.bind(this)
     // Throttle dispatch commands to prevent I/O and CPU obstruction
     // 10 operations / second seems like a sane limit
-    this.dispatchCommand = pthrottle(this.dispatchCommand.bind(this), config.ioThrottleFrequency, 1000)
+    this.dispatchCommand = this.dispatchCommand.bind(this) // pthrottle(this.dispatchCommand.bind(this), config.ioThrottleFrequency, 1000)
+    this.fileSystem = new config.FileSystemDriver(storeName)
   }
 
   private getListenersForURI(uri: string) {
@@ -186,22 +187,23 @@ export class State implements StateInterface {
     return view(lens, this.cacheStore)
   }
 
-  getLocalPathFromURI(uri: string): string {
-    const pathLens = lensProp('path')
-    const pathFromURI = view(pathLens, this.getURIModel(uri)) as string
+  getLocalURIForRemoteURI(remoteURI: string): string {
+    const pathLens = lensProp('localURI')
+    const pathFromURI = view(pathLens, this.getURIModel(remoteURI)) as string
     invariant(pathFromURI !== undefined, 'the fetched URI has no matching model in registry')
     return pathFromURI
   }
 
-  getBaseDir() {
-    const dir = this.config.fsKind === 'CACHE' ?
-          RNFetchBlob.fs.dirs.CacheDir :
-          RNFetchBlob.fs.dirs.DocumentDir
-    return `${dir}/${this.storeName}`
+  getBaseDirURI() {
+    return this.fileSystem.getBaseDirURI()
   }
 
-  getTempFilenameFromURI(uri: string) {
-    return `${this.getBaseDir()}/${Buffer.from(uri).toString('base64')}`
+  getFileNamePrefixForURI(remoteURI: string): string {
+    return Buffer.from(remoteURI).toString('base64')
+  }
+
+  getFilePrefixURIForRemoteURI(remoteURI: string) {
+    return joinUri(this.getBaseDirURI(), this.getFileNamePrefixForURI(remoteURI))
   }
 
   addListener(uri: string, listener: URIEventListener): URIEvent {

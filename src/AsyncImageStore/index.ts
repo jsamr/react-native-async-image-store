@@ -10,19 +10,17 @@ import {
     URICommandType,
     StorageDriverInterface,
     ProgressCallback,
-    RequestReport
+    RequestReport,
+    UserImageStoreConfig,
+    IODriverInterface
 } from '@src/interfaces'
-import { IODriver } from '@src/drivers/IODriver'
-import { Platform } from 'react-native'
 import { State, ProposeFunction } from '@src/State'
 import { defaultConfig } from '@src/default-config'
+import splitEvery from 'ramda/es/splitEvery';
 
 export type Target = string|ImageSource
 
 const storesMap: Map<string, AsyncImageStore> = new Map()
-
-// TODO investigate
-const FILE_PREFIX = Platform.OS === 'ios' ? '' : 'file://'
 
 function getSourceFromUri(target: Target): ImageSource {
   if (typeof target === 'string') {
@@ -32,11 +30,10 @@ function getSourceFromUri(target: Target): ImageSource {
 }
 
 function reportToProposal(report: RequestReport): URIPatch {
-  const { path, versionTag, expires } = report
+  const { localURI, versionTag, expires } = report
   return {
-    path,
     versionTag,
-    localURI: FILE_PREFIX + path,
+    localURI,
     expired: expires < new Date().getTime(),
     fetching: false,
     error: report.error,
@@ -65,7 +62,7 @@ function normalizeUserConf(config: Partial<AsyncImageStoreConfig>): Partial<Asyn
 
 export class AsyncImageStore {
   // @ts-ignore
-  private iodriver: IODriver
+  private iodriver: IODriverInterface
   // @ts-ignore
   private state: State
   private mounted: boolean = false
@@ -90,7 +87,7 @@ export class AsyncImageStore {
 
   private initialize() {
     this.state = new State(this.config, this.name)
-    this.iodriver = new IODriver(this.name, this.config, this.state)
+    this.iodriver = new this.config.IODriver(this.name, this.config, this.state)
     this.storage = new this.config.StorageDriver(this.name)
     this.state.registerCommandReactor('PRELOAD', this.onPreload)
     this.state.registerCommandReactor('REVALIDATE', this.onRevalidate)
@@ -268,11 +265,12 @@ export class AsyncImageStore {
   public async preloadImage(target: Target): Promise<URIEvent> {
     this.assertMountInvariant()
     const source = getSourceFromUri(target)
+    await this.iodriver.createBaseDirIfMissing()
     return this.dispatchCommandToURI(source.uri, 'PRELOAD', source.headers)
   }
 
     /**
-     * **Asynchronously**  preload the list of images to Store.
+     * **Asynchronously** and in parallel: preload the list of images to Store.
      * 
      * **Info** This function will revalidate images which are already preloaded, and download the others.
      * 
@@ -284,11 +282,16 @@ export class AsyncImageStore {
     this.assertMountInvariant()
     const events: URIEvent[] = []
     let i = 0
-    for (const target of targets) {
+    await this.iodriver.createBaseDirIfMissing()
+    const tasks = targets.map(target => async () => {
       const event = await this.preloadImage(target)
-      events.push(event)
+      event && events.push(event)
       onProgress && onProgress(event, i, targets.length)
-      i = i + 1
+      i += 1
+    })
+    const bundlesOfTasks = splitEvery(this.config.maxParallelDownloads, tasks)
+    for (const bundle of bundlesOfTasks) {
+      await Promise.all(bundle.map(f => f()))
     }
     return events
   }
@@ -341,6 +344,7 @@ export class AsyncImageStore {
      */
   public async revalidateImage(target: Target): Promise<URIEvent> {
     this.assertMountInvariant()
+    await this.iodriver.createBaseDirIfMissing()
     const source = getSourceFromUri(target)
     return this.dispatchCommandToURI(source.uri, 'REVALIDATE', source.headers)
   }
@@ -361,6 +365,7 @@ export class AsyncImageStore {
      */
   public async revalidateAllImages(onProgress?: ProgressCallback): Promise<URIEvent[]> {
     this.assertMountInvariant()
+    await this.iodriver.createBaseDirIfMissing()
     return this.dispatchCommandToAll('REVALIDATE', onProgress)
   }
 
@@ -377,6 +382,7 @@ export class AsyncImageStore {
      */
   public async revalidateAllStaleImages(onProgress?: ProgressCallback): Promise<URIEvent[]> {
     this.assertMountInvariant()
+    await this.iodriver.createBaseDirIfMissing()
     return this.dispatchCommandWhen('REVALIDATE', (s => s.fileState === 'STALE'), onProgress)
   }
 
@@ -396,7 +402,7 @@ export class AsyncImageStore {
       await this.unmount()
     }
     await this.storage.clear()
-    await this.iodriver.deleteCacheRoot()
+    await this.iodriver.deleteBaseDirIfExists()
     this.initialize()
   }
 }
@@ -416,10 +422,10 @@ export function getStoreByName(name: string): AsyncImageStore|null {
  * **Warning**: Can be called once only. Use `getStoreByName` instead if you're looking for an instance.
  * 
  * @param name The unique name.
- * @param userConfig See config structure in the type definition of `AsyncImageStoreConfig`
+ * @param userConfig See config structure in the type definition of `UserImageStoreConfig`
  * @see AsyncImageStoreConfig
  * @see getStoreByName
  */
-export function createStore(name: string, userConfig?: Partial<AsyncImageStoreConfig>) {
-  return new AsyncImageStore(name, userConfig || {})
+export function createStore(name: string, userConfig: UserImageStoreConfig) {
+  return new AsyncImageStore(name, userConfig)
 }

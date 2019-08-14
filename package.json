@@ -37,7 +37,6 @@
     "react": "^16.8.1",
     "react-native": "^0.59.1",
     "rimraf": "^2.6.3",
-    "rn-fetch-blob": "^0.10.15",
     "ts-essentials": "^1.0.2",
     "tslint": "^5.12.1",
     "tslint-config-airbnb": "^5.11.1",
@@ -48,12 +47,13 @@
   },
   "scripts": {
     "build": "rimraf lib; ttsc --project ./tsconfig-build.json",
-    "test": "jest"
+    "test": "jest",
+    "lint": "tslint -p . --exclude '**/*.d.ts' -c tslint.json 'src/**/*.ts?(x)' --fix"
   },
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
-    "rn-fetch-blob": "~0.10.15",
+    "react-native-unimodules": "*",
     "@react-native-community/async-storage": "^1"
   },
   "dependencies": {

@@ -12,12 +12,11 @@ export declare function getURIStateFromModel(model: URICacheModel | null, networ
 export declare function getInitialURICacheModel(uri: string): URICacheModel;
 export declare const DEBOUNCE_DELAY = 500;
 export declare class State implements StateInterface {
-    private config;
-    private storeName;
     private reactors;
     private listeners;
     private lastEvents;
     private registryListeners;
+    private fileSystem;
     private cacheStore;
     constructor(config: AsyncImageStoreConfig, storeName: string);
     private getListenersForURI;
@@ -29,9 +28,10 @@ export declare class State implements StateInterface {
     updateNetworkModel(networkAvailable: boolean): Promise<void>;
     registerCommandReactor<C extends string, P>(commandName: C, reactor: Reactor): void;
     getURIModel(uri: string): URICacheModel;
-    getLocalPathFromURI(uri: string): string;
-    getBaseDir(): string;
-    getTempFilenameFromURI(uri: string): string;
+    getLocalURIForRemoteURI(remoteURI: string): string;
+    getBaseDirURI(): string;
+    getFileNamePrefixForURI(remoteURI: string): string;
+    getFilePrefixURIForRemoteURI(remoteURI: string): string;
     addListener(uri: string, listener: URIEventListener): URIEvent;
     removeListener(uri: string, listener: URIEventListener): void;
     getLastURIEvent(uri: string): URIEvent;

@@ -1,5 +1,5 @@
 import { Reactor, RegistryUpdateListener } from "../State";
-export interface AsyncImageStoreConfig {
+export interface BaseAsyncImageStoreConfig {
     /**
      * Log events to the console
      *
@@ -33,23 +33,12 @@ export interface AsyncImageStoreConfig {
      */
     autoRemoveStaleImages: boolean;
     /**
-     * Which kind of file-system should be used.
-     *
-     * Files stored while `fsKind` is set to `PERMANENT` will never be (intentionnaly) altered
-     * by the operating system, while `CACHE` option offers no such guarantee thus limitating your application storage footprint.
-     *
-     * **Implementation note**: See [`RNFetchBlob.fs.dirs.DocumentDir` and `RNFetchBlob.fs.dirs.CacheDir`](https://github.com/joltup/rn-fetch-blob/wiki/File-System-Access-API#dirs)
-     *
-     * **Default**: `PERMANENT`
-     */
-    fsKind: FSKind;
-    /**
-     * The maximum number of I/O operations per second handled by one Store at a time.
-     * This is a balance between operation speed and JS thread obstruction.
+     * The maximum number of parallel downloads at a time.
+     * This is a balance between operation speed and I/O bottlenecks.
      *
      * **Default**: `10`
      */
-    ioThrottleFrequency: number;
+    maxParallelDownloads: number;
     /**
      * A `class` which produces `StorageDriverInterface` instances.
      * This driver is used to persist meta-information about updates.
@@ -73,22 +62,63 @@ export interface AsyncImageStoreConfig {
      * @see AbstractIODriver
      *
      */
-    IODriver: IODriverClass<any>;
+    IODriver: IODriverClass;
 }
-export declare type FSKind = 'CACHE' | 'PERMANENT';
+export interface MandatoryUserAsyncImageStoreConfig {
+    /**
+     * A `class` which produces `DownloadManagerInterface` instances.
+     * This manager is used to download images file.
+     */
+    DownloadManager: DownloadManagerClass;
+    /**
+     * A `class` which produces `FileSystemDriverInterface` instances.
+     * This driver is used to move images file through URIs.
+     */
+    FileSystemDriver: FileSystemDriverClass;
+}
+export declare type UserImageStoreConfig = Partial<AsyncImageStoreConfig> & MandatoryUserAsyncImageStoreConfig;
+export interface AsyncImageStoreConfig extends BaseAsyncImageStoreConfig, MandatoryUserAsyncImageStoreConfig {
+}
+export interface DownloadReport {
+    isOK: boolean;
+    status: number;
+    headers: Headers;
+}
+export interface DownloadManagerInterface {
+    /**
+     * Download remote image to local URI.
+     *
+     * @throws Any exception thrown by this function WILL be cought by the `IODriver`.
+     * @param remoteURI The remote image resource locator.
+     * @param localURI The target local URI. The URI scheme WILL be `file://`.
+     * @param headers A map of headers that MUST be provided with the download request.
+     */
+    downloadImage(remoteURI: string, localURI: string, headers: Record<string, string>): Promise<DownloadReport>;
+}
+export declare type DownloadManagerClass = new () => DownloadManagerInterface;
 export interface IODriverInterface {
     saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport>;
     revalidateImage({ uri, headers }: ImageSource, versionTag: URIVersionTag): Promise<RequestReport>;
     imageExists({ uri }: ImageSource): Promise<boolean>;
     deleteImage(src: ImageSource): Promise<void>;
-    deleteCacheRoot(): Promise<void>;
+    createBaseDirIfMissing(): Promise<void>;
+    deleteBaseDirIfExists(): Promise<void>;
 }
 export interface StorageDriverInterface {
     load(): Promise<URICacheRegistry | null>;
     save(registry: URICacheRegistry): Promise<void>;
     clear(): Promise<void>;
 }
-export declare type IODriverClass<C extends IODriverInterface> = new (name: string, config: AsyncImageStoreConfig, fileLocator: FileLocatorInterface) => IODriverInterface;
+export interface FileSystemDriverInterface {
+    nodeExists: (nodeURI: string) => Promise<boolean>;
+    delete: (nodeURI: string) => Promise<void>;
+    copy: (sourceURI: string, destinationURI: string) => Promise<void>;
+    move: (sourceURI: string, destinationURI: string) => Promise<void>;
+    makeDirectory: (nodeURI: string) => Promise<void>;
+    getBaseDirURI: () => string;
+}
+export declare type FileSystemDriverClass = new (storeName: string) => FileSystemDriverInterface;
+export declare type IODriverClass = new (name: string, config: AsyncImageStoreConfig, fileLocator: FileLocatorInterface) => IODriverInterface;
 export declare type StorageDriverClass<C extends StorageDriverInterface = StorageDriverInterface> = new (name: string) => C;
 export declare type ProgressCallback = (event: URIEvent, currentIndex: number, total: number) => void;
 export interface HTTPHeaders {
@@ -103,7 +133,7 @@ export interface RequestReport {
     expires: number;
     error: Error | null;
     versionTag: URIVersionTag | null;
-    path: string;
+    localURI: string;
 }
 export interface URIVersionTag {
     type: 'ETag' | 'LastModified';
@@ -122,7 +152,6 @@ export interface URICacheModel {
     fileExists: boolean;
     expired: boolean;
     fetching: boolean;
-    path: string;
     localURI: string;
     versionTag: URIVersionTag | null;
     error: Error | null;
@@ -147,17 +176,21 @@ export interface FileLocatorInterface {
     /**
      * Get root directory from which images will be stored.
      */
-    getBaseDir(): string;
+    getBaseDirURI(): string;
     /**
-     * Get the local path associated to URI.
+     * Get the local URI associated with remote URI.
      * @param uri
      */
-    getLocalPathFromURI(uri: string): string;
+    getLocalURIForRemoteURI(remoteURI: string): string;
     /**
-     * Get temporary file path, prior to knowing it's mime-deduced file extension.
+     * Get prefix of permanent file URI
      * @param uri
      */
-    getTempFilenameFromURI(uri: string): string;
+    getFilePrefixURIForRemoteURI(remoteURI: string): string;
+    /**
+     * Get file name prefix (without extension)
+     */
+    getFileNamePrefixForURI(remoteURI: string): string;
 }
 export interface StateInterface extends FileLocatorInterface {
     /**

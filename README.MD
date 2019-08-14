@@ -1,4 +1,4 @@
-# The image async store for react native
+# The async image store for react native
 
 **Motivations**: There is already a lot of great libraries for caching images in React Native. But I couldn't find one which allowed me to fully **control** my image assets and their persistance.
 
@@ -8,14 +8,13 @@
 - however, if you just need a cache, you can configure this library to behave as such;
 - you have full control on the cache strategy, and can manually add, remove and revalidate images;
 - cache validation is fully compatible with `Cache-Control`, `Expires`, `Last-Modified`, and `ETag` HTTP headers for an optimal bandwidth consumption, [see this section for a deep dive](#cache-policy).
+- the library is fully modular: you must inject your `FileSystem` and `DownloadManager` dependencies to fit with your choice of I/O libraries.
 
 **Cons**:
 
 - If you don't need this level of control over the cache, but are only concerned about performance gains, I would recommend [react-native-fast-image](https://github.com/DylanVann/react-native-fast-image) instead.
 
 ## Installation
-
-This library has a peer dependency to `rn-fetch-blob`. Follow [install instructions here](https://github.com/joltup/rn-fetch-blob#user-content-installation).
 
 ## Use case 1: lazy preload images as they are mounted
 

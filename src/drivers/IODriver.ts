@@ -1,59 +1,134 @@
-import RNFetchBlob from 'rn-fetch-blob'
 import {
     AsyncImageStoreConfig,
+    HTTPHeaders,
     ImageSource,
-    URIVersionTag,
     IODriverInterface,
     RequestReport,
-    FileLocatorInterface
+    URIVersionTag,
+    FileLocatorInterface,
+    FileSystemDriverInterface,
+    DownloadManagerInterface
 } from '@src/interfaces'
-import { mergeDeepRight } from 'ramda'
-import { AbstractIODriver } from '@src/drivers/AbstractIODriver'
+import { MissingContentTypeException } from '@src/errors/MissingContentTypeException'
+import { ForbiddenMimeTypeException } from '@src/errors/ForbiddenMimeTypeException'
 import { ImageDownloadFailure } from '@src/errors/ImageDownloadFailure'
+import { mergeDeepRight } from 'ramda'
 
-export class IODriver extends AbstractIODriver implements IODriverInterface {
+export class IODriver implements IODriverInterface {
+  protected fileSystem: FileSystemDriverInterface
+  protected downloadManager: DownloadManagerInterface
 
-  constructor(name: string, config: AsyncImageStoreConfig, fileLocator: FileLocatorInterface) {
-    super(name, config, fileLocator)
+  constructor(protected name: string, protected config: AsyncImageStoreConfig, protected fileLocator: FileLocatorInterface) {
+    this.fileSystem = new config.FileSystemDriver(name)
+    this.downloadManager = new config.DownloadManager()
   }
 
-  private prepareFetch(uri: string) {
-    return RNFetchBlob.config({
-      path: this.fileLocator.getTempFilenameFromURI(uri)
-    })
+  protected getHeadersFromVersionTag(versionTag: URIVersionTag) {
+    const headers: HTTPHeaders = {}
+    if (versionTag.type === 'ETag') {
+      headers['If-None-Match'] = versionTag.value
+    } else if (versionTag.type === 'LastModified') {
+      headers['If-Modified-Since'] = versionTag.value
+    }
+    return headers
   }
 
-  async saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport> {
-    // Override default cache-control
-    const headers = mergeDeepRight(userHeaders, { 'Cache-Control': 'max-age=31536000' })
-    try {
-      const response = await this.prepareFetch(uri).fetch('GET', uri, headers)
-      // Content-Type = image/jpeg
-      const downloadPath = this.fileLocator.getTempFilenameFromURI(uri)
-      let path = downloadPath
-      const error = response.respInfo.status >= 400 ? new ImageDownloadFailure(uri, response.respInfo.status) : null
-      if (!error) {
-        path += '.' + this.getImageFileExtensionFromHeaders(uri, response.respInfo.headers)
-        await RNFetchBlob.fs.mv(downloadPath, path)
-        console.info(`Moved file from ${downloadPath} to ${path}`)
-      }
+  protected getFileExtensionFromMimeType(mime: string): string|null {
+    const regex=/^image\/(.+)/
+    const res = regex.exec(mime)
+    if (!res) {
+      return null
+    }
+    const [_, extension ] = res
+    return extension
+  }
+
+  protected getImageFileExtensionFromHeaders(uri: string, headers: Headers): string {
+    const mimeType: string|null = headers.get('Content-Type')
+    if (!mimeType) {
+      throw new MissingContentTypeException(uri)
+    }
+    const extension = this.getFileExtensionFromMimeType(mimeType)
+    if (!extension) {
+      throw new ForbiddenMimeTypeException(uri, mimeType)
+    }
+    return extension
+  }
+
+  protected expiryFromMaxAge(maxAge_s: number): number {
+    return maxAge_s * 1000 + new Date().getTime()
+  }
+
+  protected getVersionTagFromHeaders(headers: Headers): URIVersionTag|null {
+    if (headers.get('Etag')) {
       return {
-        uri,
-        error,
-        path,
-        expires: this.config.overrideMaxAge ? this.expiryFromMaxAge(this.config.overrideMaxAge) : this.getExpirationFromHeaders(response.respInfo.headers),
-        versionTag: this.getVersionTagFromHeaders(response.respInfo.headers)
-      }
-    } catch (error) {
-      return {
-        uri,
-        error: new ImageDownloadFailure(uri, error.status),
-        expires: 0,
-        path: this.fileLocator.getTempFilenameFromURI(uri),
-        versionTag: null
+        type: 'ETag',
+        value: (headers.get('Etag') as string).trim()
       }
     }
+    if (headers.get('Last-Modified')) {
+      return {
+        type: 'LastModified',
+        value: (headers.get('Last-Modified') as string).trim()
+      }
+    }
+    return null
+  }
 
+  protected getExpirationFromHeaders(headers: Headers): number {
+    if (headers.has('Cache-Control')) {
+      const contentType = headers.get('Cache-Control') as string
+      const directives = contentType.split(',')
+      for (const dir of directives) {
+        const match = /^max-age=(.*)/.exec(dir)
+        if (match) {
+          const [ _, group] = match
+          const maxAge_s = Number(group)
+          if (!isNaN(maxAge_s)) {
+            return this.expiryFromMaxAge(maxAge_s)
+          }
+        }
+      }
+    }
+    if (headers.has('Expires')) {
+      const expiresAt = headers.get('Expires') as string
+      return Date.parse(expiresAt)
+    }
+    // console.info(`COULDN'T FIND EXPIRY OR MAX AGE INFORMATION, FALLBACK TO DEFAULT`)
+    return this.expiryFromMaxAge(this.config.defaultMaxAge)
+  }
+
+  protected log(info: string) {
+    if (this.config.debug) {
+      console.log(`AsyncImageStore ${this.name}: ${info}`)
+    }
+  }
+
+  async createBaseDirIfMissing(): Promise<void> {
+    if (!await this.fileSystem.nodeExists(this.fileLocator.getBaseDirURI())) {
+      return this.fileSystem.makeDirectory(this.fileLocator.getBaseDirURI())
+    }
+  }
+
+  async deleteBaseDirIfExists(): Promise<void> {
+    if (await this.fileSystem.nodeExists(this.fileLocator.getBaseDirURI())) {
+      return this.fileSystem.delete(this.fileLocator.getBaseDirURI())
+    }
+  }
+
+  async deleteImage(src: ImageSource): Promise<void> {
+    const { uri } = src
+    const file = this.fileLocator.getLocalURIForRemoteURI(uri)
+    if (await this.imageExists(src)) {
+      await this.fileSystem.delete(this.fileLocator.getLocalURIForRemoteURI(uri))
+      this.log(`Local file '${file}' from origin ${uri} successfully deleted`)
+    } else {
+      this.log(`Local file '${file}' from origin ${uri} was targeted for delete but it does not exist`)
+    }
+  }
+
+  async imageExists({ uri }: ImageSource): Promise<boolean> {
+    return this.fileSystem.nodeExists(uri)
   }
 
   async revalidateImage({ uri, headers }: ImageSource, versionTag: URIVersionTag): Promise<RequestReport> {
@@ -64,24 +139,34 @@ export class IODriver extends AbstractIODriver implements IODriverInterface {
     return this.saveImage({ uri, headers: newHeaders })
   }
 
-  async imageExists({ uri }: ImageSource): Promise<boolean> {
-    return RNFetchBlob.fs.exists(this.fileLocator.getLocalPathFromURI(uri))
-  }
-
-  async deleteImage(src: ImageSource): Promise<void> {
-    const { uri } = src
-    const file = this.fileLocator.getLocalPathFromURI(uri)
-    if (await this.imageExists(src)) {
-      await RNFetchBlob.fs.unlink(this.fileLocator.getLocalPathFromURI(uri))
-      this.log(`Local file '${file}' from origin ${uri} successfully deleted`)
-    } else {
-      this.log(`Local file '${file}' from origin ${uri} was targeted for delete but it does not exist`)
-    }
-  }
-
-  async deleteCacheRoot(): Promise<void> {
-    if (await RNFetchBlob.fs.exists(this.fileLocator.getBaseDir())) {
-      return RNFetchBlob.fs.unlink(this.fileLocator.getBaseDir())
+  async saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport> {
+    // Override default cache-control
+    const headers = mergeDeepRight(userHeaders, { 'Cache-Control': 'max-age=31536000' })
+    const baseLocalURI = this.fileLocator.getFilePrefixURIForRemoteURI(uri)
+    try {
+      const report = await this.downloadManager.downloadImage(uri, baseLocalURI, headers)
+      let localURI = ''
+      const error = !report.isOK ? new ImageDownloadFailure(uri, report.status) : null
+      if (report.isOK) {
+        const extension = this.getImageFileExtensionFromHeaders(uri, report.headers)
+        localURI = `${baseLocalURI}.${extension}`
+        await this.fileSystem.move(baseLocalURI, localURI)
+      }
+      return {
+        uri,
+        error,
+        localURI,
+        expires: this.config.overrideMaxAge ? this.expiryFromMaxAge(this.config.overrideMaxAge) : this.getExpirationFromHeaders(report.headers),
+        versionTag: this.getVersionTagFromHeaders(report.headers)
+      }
+    } catch (error) {
+      return {
+        uri,
+        error: new ImageDownloadFailure(uri, error.status, error.message),
+        expires: 0,
+        localURI: this.fileLocator.getFilePrefixURIForRemoteURI(uri),
+        versionTag: null
+      }
     }
   }
 }

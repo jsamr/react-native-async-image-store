@@ -1,4 +1,4 @@
-import { AsyncImageStoreConfig, ImageSource, URIEvent, URIEventListener, ProgressCallback } from "../interfaces";
+import { AsyncImageStoreConfig, ImageSource, URIEvent, URIEventListener, ProgressCallback, UserImageStoreConfig } from "../interfaces";
 export declare type Target = string | ImageSource;
 export declare class AsyncImageStore {
     private name;
@@ -64,7 +64,7 @@ export declare class AsyncImageStore {
      */
     preloadImage(target: Target): Promise<URIEvent>;
     /**
-     * **Asynchronously**  preload the list of images to Store.
+     * **Asynchronously** and in parallel: preload the list of images to Store.
      *
      * **Info** This function will revalidate images which are already preloaded, and download the others.
      *
@@ -159,8 +159,8 @@ export declare function getStoreByName(name: string): AsyncImageStore | null;
  * **Warning**: Can be called once only. Use `getStoreByName` instead if you're looking for an instance.
  *
  * @param name The unique name.
- * @param userConfig See config structure in the type definition of `AsyncImageStoreConfig`
+ * @param userConfig See config structure in the type definition of `UserImageStoreConfig`
  * @see AsyncImageStoreConfig
  * @see getStoreByName
  */
-export declare function createStore(name: string, userConfig?: Partial<AsyncImageStoreConfig>): AsyncImageStore;
+export declare function createStore(name: string, userConfig: UserImageStoreConfig): AsyncImageStore;
