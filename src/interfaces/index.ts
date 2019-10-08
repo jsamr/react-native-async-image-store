@@ -56,7 +56,8 @@ export interface BaseAsyncImageStoreConfig {
    * A `class` which produces `IODriverInterface` instances.
    * This driver is used to fetch, store, delete and check images existence.
    * 
-   * **Default**: The default implementation uses `RNFetchBlob`
+   * **Default**: The default implementation uses `fetch` API. To use it on Android, you must configure your
+   * `AndroidManifest.xml`. See instructions here: {@link https://git.io/JeWlk | Libraries/Blob/URL.js#L29}.
    * 
    * @see IODriverInterface
    * @see IODriverClass
@@ -64,6 +65,10 @@ export interface BaseAsyncImageStoreConfig {
    * 
    */
   IODriver: IODriverClass
+  /**
+   * You can store image meta-info such as Size from headers. And retrieve it later with {@link AsyncImageStore.getMetaInfo} method.
+   */
+  imageMetaInfoFetcher: <T extends object>(headers: Headers) => T
 }
 
 export interface MandatoryUserAsyncImageStoreConfig {
@@ -144,12 +149,13 @@ export interface ImageSource {
   headers?: HTTPHeaders
 }
 
-export interface RequestReport {
+export interface RequestReport<T = any> {
   uri: string
   expires: number
   error: Error|null
   versionTag: URIVersionTag | null
   localURI: string
+  metaInfo: T
 }
 
 export interface URIVersionTag {
@@ -165,7 +171,7 @@ export type URICacheSyncState = 'IDLE_SUCCESS' | 'IDLE_ERROR' | 'FETCHING' | 'RE
 
 export type CacheNetworkState = 'AVAILABLE' | 'UNAVAILABLE'
 
-export interface URICacheModel {
+export interface URICacheModel<T = any> {
   uri: string
   headers?: {[key: string]: string}
   registered: boolean
@@ -175,6 +181,7 @@ export interface URICacheModel {
   localURI: string
   versionTag: URIVersionTag|null
   error: Error|null
+  metaInfo: T|null
 }
 
 export type URIEventType = 'NETWORK_UPDATE' | 'URI_UPDATE' | 'URI_INIT'

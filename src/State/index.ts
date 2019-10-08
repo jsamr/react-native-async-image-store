@@ -66,7 +66,8 @@ export function getInitialURICacheModel(uri: string): URICacheModel {
     fileExists: false,
     localURI: '',
     registered: false,
-    versionTag: null
+    versionTag: null,
+    metaInfo: null
   }
 }
 
@@ -283,5 +284,11 @@ export class State implements StateInterface {
       listener.clear()
     }
     this.registryListeners.clear()
+  }
+
+  public getImageMetaInfo<T>(uri: string): T {
+    const lens = this.getURILens(uri)
+    const actual = view(lens, this.cacheStore) as URICacheModel
+    return actual.metaInfo as T
   }
 }

@@ -16,7 +16,7 @@ import {
 } from '@src/interfaces'
 import { State, ProposeFunction } from '@src/State'
 import { defaultConfig } from '@src/default-config'
-import splitEvery from 'ramda/es/splitEvery';
+import splitEvery from 'ramda/es/splitEvery'
 
 export type Target = string|ImageSource
 
@@ -30,14 +30,15 @@ function getSourceFromUri(target: Target): ImageSource {
 }
 
 function reportToProposal(report: RequestReport): URIPatch {
-  const { localURI, versionTag, expires } = report
+  const { localURI, versionTag, expires, metaInfo, error } = report
   return {
     versionTag,
     localURI,
+    metaInfo,
+    error,
     expired: expires < new Date().getTime(),
     fetching: false,
-    error: report.error,
-    fileExists: report.error === null
+    fileExists: error === null
   }
 }
 
@@ -404,6 +405,17 @@ export class AsyncImageStore {
     await this.storage.clear()
     await this.iodriver.deleteBaseDirIfExists()
     this.initialize()
+  }
+
+  /**
+   * Get metainfo for given target.
+   * 
+   * **Prerequisites**: You must have provided a {@link BaseAsyncImageStoreConfig.imageMetaInfoFetcher}.
+   * 
+   * @param target 
+   */
+  public getMetaInfo<T extends object>(target: Target): T|null {
+    return this.state.getImageMetaInfo(typeof target === 'string' ? target : target.uri)
   }
 }
 

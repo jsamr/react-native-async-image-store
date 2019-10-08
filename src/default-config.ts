@@ -8,5 +8,6 @@ export const defaultConfig: BaseAsyncImageStoreConfig = {
   debug: __DEV__,
   defaultMaxAge: 86000,
   autoRemoveStaleImages: false,
-  maxParallelDownloads: 10
+  maxParallelDownloads: 10,
+  imageMetaInfoFetcher: <T>() => ({} as unknown as T)
 }

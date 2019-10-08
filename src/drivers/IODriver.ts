@@ -17,10 +17,12 @@ import { mergeDeepRight } from 'ramda'
 export class IODriver implements IODriverInterface {
   protected fileSystem: FileSystemDriverInterface
   protected downloadManager: DownloadManagerInterface
+  protected metaInfoFetcher?: <T extends object>(headers: Headers) => T
 
   constructor(protected name: string, protected config: AsyncImageStoreConfig, protected fileLocator: FileLocatorInterface) {
     this.fileSystem = new config.FileSystemDriver(name)
     this.downloadManager = new config.DownloadManager()
+    this.metaInfoFetcher = config.imageMetaInfoFetcher
   }
 
   protected getHeadersFromVersionTag(versionTag: URIVersionTag) {
@@ -94,7 +96,6 @@ export class IODriver implements IODriverInterface {
       const expiresAt = headers.get('Expires') as string
       return Date.parse(expiresAt)
     }
-    // console.info(`COULDN'T FIND EXPIRY OR MAX AGE INFORMATION, FALLBACK TO DEFAULT`)
     return this.expiryFromMaxAge(this.config.defaultMaxAge)
   }
 
@@ -157,7 +158,8 @@ export class IODriver implements IODriverInterface {
         error,
         localURI,
         expires: this.config.overrideMaxAge ? this.expiryFromMaxAge(this.config.overrideMaxAge) : this.getExpirationFromHeaders(report.headers),
-        versionTag: this.getVersionTagFromHeaders(report.headers)
+        versionTag: this.getVersionTagFromHeaders(report.headers),
+        metaInfo: this.metaInfoFetcher ? this.metaInfoFetcher(report.headers) : null
       }
     } catch (error) {
       return {
@@ -165,7 +167,8 @@ export class IODriver implements IODriverInterface {
         error: new ImageDownloadFailure(uri, error.status, error.message),
         expires: 0,
         localURI: this.fileLocator.getFilePrefixURIForRemoteURI(uri),
-        versionTag: null
+        versionTag: null,
+        metaInfo: null
       }
     }
   }
