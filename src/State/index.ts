@@ -87,7 +87,7 @@ export class State implements StateInterface {
 
   private cacheStore: CacheStore = clone(initialCacheStore)
 
-  constructor(config: AsyncImageStoreConfig, storeName: string) {
+  constructor(config: AsyncImageStoreConfig<any>, storeName: string) {
     this.updateURIModel = this.updateURIModel.bind(this)
     this.updateNetworkModel = this.updateNetworkModel.bind(this)
     // Throttle dispatch commands to prevent I/O and CPU obstruction

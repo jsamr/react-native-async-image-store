@@ -1,6 +1,6 @@
 import { Reactor, RegistryUpdateListener } from '@src/State'
 
-export interface BaseAsyncImageStoreConfig {
+export interface BaseAsyncImageStoreConfig<T extends object> {
   /**
    * Log events to the console
    * 
@@ -68,7 +68,7 @@ export interface BaseAsyncImageStoreConfig {
   /**
    * You can store image meta-info such as Size from headers. And retrieve it later with {@link AsyncImageStore.getMetaInfo} method.
    */
-  imageMetaInfoFetcher: <T extends object>(headers: Headers) => T
+  imageMetaInfoFetcher: (headers: Headers) => T
 }
 
 export interface MandatoryUserAsyncImageStoreConfig {
@@ -84,9 +84,9 @@ export interface MandatoryUserAsyncImageStoreConfig {
   FileSystemDriver: FileSystemDriverClass
 }
 
-export type UserImageStoreConfig = Partial<AsyncImageStoreConfig> & MandatoryUserAsyncImageStoreConfig
+export type UserImageStoreConfig<T extends object> = Partial<AsyncImageStoreConfig<T>> & MandatoryUserAsyncImageStoreConfig
 
-export interface AsyncImageStoreConfig extends BaseAsyncImageStoreConfig, MandatoryUserAsyncImageStoreConfig {}
+export interface AsyncImageStoreConfig<T extends object> extends BaseAsyncImageStoreConfig<T>, MandatoryUserAsyncImageStoreConfig {}
 
 export interface DownloadReport {
   isOK: boolean
@@ -134,7 +134,7 @@ export interface FileSystemDriverInterface {
 
 export type FileSystemDriverClass = new(storeName: string) => FileSystemDriverInterface
 
-export type IODriverClass = new(name: string, config: AsyncImageStoreConfig, fileLocator: FileLocatorInterface) => IODriverInterface
+export type IODriverClass = new<T extends object = {}>(name: string, config: AsyncImageStoreConfig<T>, fileLocator: FileLocatorInterface) => IODriverInterface
 
 export type StorageDriverClass<C extends StorageDriverInterface = StorageDriverInterface> = new(name: string) => C
 

@@ -39,7 +39,7 @@ class StupidDownloadManager implements DownloadManagerInterface {
 
 }
 
-const enhancedConfig: AsyncImageStoreConfig = {
+const enhancedConfig: AsyncImageStoreConfig<{}> = {
   ...defaultConfig,
   FileSystemDriver: StupidFileSystemDriver,
   DownloadManager: StupidDownloadManager

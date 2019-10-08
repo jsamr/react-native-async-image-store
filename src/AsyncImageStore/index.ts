@@ -48,7 +48,7 @@ function reportToProposal(report: RequestReport): URIPatch {
  * 
  * @param config 
  */
-function normalizeUserConf(config: Partial<AsyncImageStoreConfig>): Partial<AsyncImageStoreConfig> {
+function normalizeUserConf<T extends object>(config: Partial<AsyncImageStoreConfig<T>>): Partial<AsyncImageStoreConfig<T>> {
   const newConf = {
     ...config
   }
@@ -61,24 +61,24 @@ function normalizeUserConf(config: Partial<AsyncImageStoreConfig>): Partial<Asyn
   return newConf
 }
 
-export class AsyncImageStore {
+export class AsyncImageStore<T extends object = any> {
   // @ts-ignore
   private iodriver: IODriverInterface
   // @ts-ignore
   private state: State
   private mounted: boolean = false
-  private config: AsyncImageStoreConfig
+  private config: AsyncImageStoreConfig<T>
   // @ts-ignore
   private storage: StorageDriverInterface
 
-  constructor(private name: string, userConfig: Partial<AsyncImageStoreConfig>) {
+  constructor(private name: string, userConfig: Partial<AsyncImageStoreConfig<T>>) {
     invariant(name !== '', 'AsyncImageStore: store name cannot be empty.')
     invariant(!storesMap.has(name), 'AsyncImageStore: only one instance per storeName is allowed.')
     storesMap.set(name, this)
     const config = {
       ...defaultConfig,
       ...normalizeUserConf(userConfig)
-    } as AsyncImageStoreConfig
+    } as AsyncImageStoreConfig<T>
     this.config = config
     this.onDelete = this.onDelete.bind(this)
     this.onPreload = this.onPreload.bind(this)
@@ -414,7 +414,7 @@ export class AsyncImageStore {
    * 
    * @param target 
    */
-  public getMetaInfo<T extends object>(target: Target): T|null {
+  public getMetaInfo(target: Target): T|null {
     return this.state.getImageMetaInfo(typeof target === 'string' ? target : target.uri)
   }
 }
@@ -438,6 +438,6 @@ export function getStoreByName(name: string): AsyncImageStore|null {
  * @see AsyncImageStoreConfig
  * @see getStoreByName
  */
-export function createStore(name: string, userConfig: UserImageStoreConfig) {
+export function createStore<T extends object = {}>(name: string, userConfig: UserImageStoreConfig<T>) {
   return new AsyncImageStore(name, userConfig)
 }

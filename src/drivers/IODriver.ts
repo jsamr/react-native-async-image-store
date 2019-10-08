@@ -17,9 +17,9 @@ import { mergeDeepRight } from 'ramda'
 export class IODriver implements IODriverInterface {
   protected fileSystem: FileSystemDriverInterface
   protected downloadManager: DownloadManagerInterface
-  protected metaInfoFetcher?: <T extends object>(headers: Headers) => T
+  protected metaInfoFetcher?: (headers: Headers) => any
 
-  constructor(protected name: string, protected config: AsyncImageStoreConfig, protected fileLocator: FileLocatorInterface) {
+  constructor(protected name: string, protected config: AsyncImageStoreConfig<any>, protected fileLocator: FileLocatorInterface) {
     this.fileSystem = new config.FileSystemDriver(name)
     this.downloadManager = new config.DownloadManager()
     this.metaInfoFetcher = config.imageMetaInfoFetcher
