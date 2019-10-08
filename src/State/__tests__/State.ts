@@ -2,11 +2,51 @@
 // tslint:disable:no-empty
 
 import { State, Reactor, DEBOUNCE_DELAY } from '../'
-import { URIEvent, URICacheRegistry, AsyncImageStoreConfig } from '@src/interfaces'
+import { URIEvent, URICacheRegistry, AsyncImageStoreConfig, FileSystemDriverInterface, DownloadManagerInterface, DownloadReport } from '@src/interfaces'
 import { defaultConfig } from '@src/default-config'
 
+class StupidFileSystemDriver implements FileSystemDriverInterface {
+  nodeExists(nodeURI: string) {
+    return Promise.resolve(false)
+  }
+  async delete(nodeURI: string) {
+    console.info(`MOCKING DELETION OF ${nodeURI}.`)
+  }
+  async copy(sourceURI: string, destinationURI: string) {
+    console.info(`MOCKING COPY OF ${sourceURI} TO ${destinationURI}.`)
+  }
+  async move(sourceURI: string, destinationURI: string) {
+    console.info(`MOCKING MOVE OF ${sourceURI} TO ${destinationURI}.`)
+  }
+  async makeDirectory(nodeURI: string) {
+    console.info(`MOCKING MKDIR OF ${nodeURI}.`)
+  }
+  getBaseDirURI() {
+    return ''
+  }
+}
+
+// tslint:disable-next-line: max-classes-per-file
+class StupidDownloadManager implements DownloadManagerInterface {
+  async downloadImage(remoteURI: string, localURI: string, headers: Record<string, string>): Promise<DownloadReport> {
+    const report: DownloadReport = {
+      isOK: true,
+      headers: new Headers(),
+      status: 200
+    }
+    return report
+  }
+
+}
+
+const enhancedConfig: AsyncImageStoreConfig = {
+  ...defaultConfig,
+  FileSystemDriver: StupidFileSystemDriver,
+  DownloadManager: StupidDownloadManager
+}
+
 function makeState() {
-  return new State(defaultConfig as AsyncImageStoreConfig, 'ImageStore')
+  return new State(enhancedConfig, 'ImageStore')
 }
 
 describe('State class', () => {
