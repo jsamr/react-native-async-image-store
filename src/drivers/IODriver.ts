@@ -129,7 +129,8 @@ export class IODriver implements IODriverInterface {
   }
 
   async imageExists({ uri }: ImageSource): Promise<boolean> {
-    return this.fileSystem.nodeExists(uri)
+    const localFileUri = this.fileLocator.getLocalURIForRemoteURI(uri)
+    return this.fileSystem.nodeExists(localFileUri)
   }
 
   async revalidateImage({ uri, headers }: ImageSource, versionTag: URIVersionTag): Promise<RequestReport> {
