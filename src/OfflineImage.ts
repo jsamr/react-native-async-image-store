@@ -126,29 +126,31 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
 
   private async registerListener(props: OfflineImageProps<any>): Promise<void> {
     const event = this.store.addCacheUpdateListener(props.source.uri, this.onCacheEvent)
-    await this.onCacheEvent(event)
+    return this.onCacheEvent(event)
   }
 
   private unregisterListener(props: OfflineImageProps<any>) {
     this.store.removeCacheUpdateListener(props.source.uri, this.onCacheEvent)
   }
 
-  async componentWillMount(): Promise<void> {
-    await this.registerListener(this.props)
+  async componentDidMount(): Promise<void> {
+    return this.registerListener(this.props)
   }
 
   componentWillUnmount() {
     this.unregisterListener(this.props)
   }
 
-  async componentWillReceiveProps(nextProps: OfflineImageProps<C>, nextState: State): Promise<void> {
-    invariant(this.props.storeName === nextProps.storeName, 'OfflineImage: storeName prop cannot be set dynamically.')
+  async componentDidUpdate(oldProps: OfflineImageProps<C>, oldState: State): Promise<void> {
+    const nextProps = this.props
+    const nextState = this.state
+    invariant(oldProps.storeName === nextProps.storeName, 'OfflineImage: storeName prop cannot be set dynamically.')
     invariant(nextProps.source && nextProps.source.uri !== null, 'OfflineImage: the source prop must contain a `uri` field.')
-    if (this.props.source.uri !== nextProps.source.uri) {
-      this.unregisterListener(this.props)
+    if (oldProps.source.uri !== nextProps.source.uri) {
+      this.unregisterListener(oldProps)
       await this.registerListener(nextProps)
     }
-    if (nextState.version !== this.state.version && nextState.syncState === 'IDLE_SUCCESS') {
+    if (nextState.version !== oldState.version && nextState.syncState === 'IDLE_SUCCESS') {
       // Force update since local version has changed
       this.ref && this.ref.forceUpdate()
     }
