@@ -24,6 +24,12 @@ export interface BaseAsyncImageStoreConfig<T extends object> {
    */
   maxAttemptsBeforeAbort: number
   /**
+   * Duration in milliseconds to wait before a new attempt after failure.
+   * 
+   * **Default**: `400`
+   */
+  sleepBetweenAttempts: number
+  /**
    * This value will override any `Cache-control: max-age` directive or `Expires` header in the image response.
    * `Infinity` can be used to denote an **immutable**, never-expire policy.
    *

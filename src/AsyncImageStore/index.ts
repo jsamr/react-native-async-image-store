@@ -61,6 +61,10 @@ function normalizeUserConf<T extends object>(config: Partial<AsyncImageStoreConf
   return newConf
 }
 
+function wait(duration: number) {
+  return new Promise(res => setTimeout(res, duration))
+}
+
 export class AsyncImageStore<T extends object = any> {
   // @ts-ignore
   private iodriver: IODriverInterface
@@ -98,7 +102,8 @@ export class AsyncImageStore<T extends object = any> {
   private async onPreload(event: URIEvent, propose: ProposeFunction, headers?: HTTPHeaders): Promise<void> {
     const { nextModel: model, nextState: state } = event
     const { uri } = model
-    for (let i = 0; i < this.config.maxAttemptsBeforeAbort; i += 1) {
+    let i = 0
+    for (i = 0; i < this.config.maxAttemptsBeforeAbort; i += 1) {
       if (state.fileState === 'FRESH') {
         this.log(`File from origin ${uri} is FRESH; ignoring preloading.`)
         return
@@ -123,7 +128,9 @@ export class AsyncImageStore<T extends object = any> {
       if (!proposal.error) {
         return
       }
-      i + 1 < this.config.maxAttemptsBeforeAbort && await new Promise(res => setTimeout(res, 400))
+      if (i + 1 < this.config.maxAttemptsBeforeAbort) {
+        await wait(this.config.sleepBetweenAttempts)
+      }
     }
   }
 

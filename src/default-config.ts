@@ -10,5 +10,6 @@ export const defaultConfig: BaseAsyncImageStoreConfig<{}> = {
   autoRemoveStaleImages: false,
   maxParallelDownloads: 10,
   maxAttemptsBeforeAbort: 3,
+  sleepBetweenAttempts: 400,
   imageMetaInfoFetcher: () => ({})
 }
