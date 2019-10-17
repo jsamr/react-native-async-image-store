@@ -18,6 +18,12 @@ export interface BaseAsyncImageStoreConfig<T extends object> {
    */
   defaultMaxAge: number
   /**
+   * Maximum of download retry after encountering failures.
+   * 
+   * **Default**: `3`
+   */
+  maxAttemptsBeforeAbort: number
+  /**
    * This value will override any `Cache-control: max-age` directive or `Expires` header in the image response.
    * `Infinity` can be used to denote an **immutable**, never-expire policy.
    *

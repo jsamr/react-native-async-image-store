@@ -98,26 +98,31 @@ export class AsyncImageStore<T extends object = any> {
   private async onPreload(event: URIEvent, propose: ProposeFunction, headers?: HTTPHeaders): Promise<void> {
     const { nextModel: model, nextState: state } = event
     const { uri } = model
-    if (state.fileState === 'FRESH') {
-      this.log(`File from origin ${uri} is FRESH; ignoring preloading.`)
-      return
+    for (let i = 0; i < this.config.maxAttemptsBeforeAbort; i += 1) {
+      if (state.fileState === 'FRESH') {
+        this.log(`File from origin ${uri} is FRESH; ignoring preloading.`)
+        return
+      }
+      if (state.fileState === 'STALE') {
+        return this.onRevalidate(event, propose, headers)
+      }
+      if (state.networkState === 'UNAVAILABLE') {
+        this.log(`File from origin ${uri} cannot be preloaded: network is unavailable.`)
+        propose({ error: new Error('Network is unavailable.') })
+        return
+      }
+      const preloadProposal: URIPatch = { fetching: true, registered: true, error: null }
+      if (headers) {
+        preloadProposal.headers = headers
+      }
+      propose(preloadProposal)
+      const report = await this.iodriver.saveImage(model)
+      propose(reportToProposal(report))
+      this.logReport(report, uri)
+      if (!report.error) {
+        return
+      }
     }
-    if (state.fileState === 'STALE') {
-      return this.onRevalidate(event, propose, headers)
-    }
-    if (state.networkState === 'UNAVAILABLE') {
-      this.log(`File from origin ${uri} cannot be preloaded: network is unavailable.`)
-      propose({ error: new Error('Network is unavailable.') })
-      return
-    }
-    const preloadProposal: URIPatch = { fetching: true, registered: true, error: null }
-    if (headers) {
-      preloadProposal.headers = headers
-    }
-    propose(preloadProposal)
-    const report = await this.iodriver.saveImage(model)
-    propose(reportToProposal(report))
-    this.logReport(report, uri)
   }
 
   private async onRevalidate(event: URIEvent, propose: ProposeFunction, headers?: HTTPHeaders): Promise<void> {
