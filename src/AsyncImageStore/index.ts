@@ -117,11 +117,13 @@ export class AsyncImageStore<T extends object = any> {
       }
       propose(preloadProposal)
       const report = await this.iodriver.saveImage(model)
-      propose(reportToProposal(report))
+      const proposal = reportToProposal(report)
+      propose(proposal)
       this.logReport(report, uri)
-      if (!report.error) {
+      if (!proposal.error) {
         return
       }
+      i + 1 < this.config.maxAttemptsBeforeAbort && await new Promise(res => setTimeout(res, 400))
     }
   }
 
