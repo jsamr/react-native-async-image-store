@@ -54,10 +54,7 @@ export interface BaseAsyncImageStoreConfig<T extends object> {
   StorageDriver: StorageDriverClass<any>
   /**
    * A `class` which produces `IODriverInterface` instances.
-   * This driver is used to fetch, store, delete and check images existence.
-   * 
-   * **Default**: The default implementation uses `fetch` API. To use it on Android, you must configure your
-   * `AndroidManifest.xml`. See instructions here: {@link https://git.io/JeWlk | Libraries/Blob/URL.js#L29}.
+   * This driver is used to store, delete and check images existence.
    * 
    * @see IODriverInterface
    * @see IODriverClass
@@ -75,6 +72,12 @@ export interface MandatoryUserAsyncImageStoreConfig {
   /**
    * A `class` which produces `DownloadManagerInterface` instances.
    * This manager is used to download images file.
+   * 
+   * @remarks
+   * You can implement this class using `fetch` API. To use it on Android, you must configure your
+   * `AndroidManifest.xml`. See instructions here: {@link https://git.io/JeWlk | Libraries/Blob/URL.js#L29}.
+   * 
+   * You can also use expo's `FileSystem.downloadAsync` or `RNFB.config().fetch()` (rn-fetch-blob).
    */
   DownloadManager: DownloadManagerClass
   /**
