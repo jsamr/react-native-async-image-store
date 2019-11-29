@@ -64,7 +64,7 @@ export function getInitialURICacheModel(uri: string): URICacheModel {
     expired: true,
     fetching: false,
     fileExists: false,
-    localURI: '',
+    localFileName: '',
     registered: false,
     versionTag: null,
     metaInfo: null
@@ -188,23 +188,28 @@ export class State implements StateInterface {
     return view(lens, this.cacheStore)
   }
 
+  getLocalFileNameForRemoteURI(remoteURI: string): string {
+    const pathLens = lensProp('localFileName')
+    const localFileName = view(pathLens, this.getURIModel(remoteURI)) as string
+    invariant(localFileName !== undefined, 'the fetched URI has no matching model in registry')
+    return localFileName
+  }
+
   getLocalURIForRemoteURI(remoteURI: string): string {
-    const pathLens = lensProp('localURI')
-    const pathFromURI = view(pathLens, this.getURIModel(remoteURI)) as string
-    invariant(pathFromURI !== undefined, 'the fetched URI has no matching model in registry')
-    return pathFromURI
+    const localFileName = this.getLocalFileNameForRemoteURI(remoteURI)
+    return this.getLocalURIFromLocalFilename(localFileName)
   }
 
   getBaseDirURI() {
     return this.fileSystem.getBaseDirURI()
   }
 
-  getFileNamePrefixForURI(remoteURI: string): string {
+  getLocalFileNamePrefixForRemoteURI(remoteURI: string): string {
     return Buffer.from(remoteURI).toString('base64')
   }
 
-  getFilePrefixURIForRemoteURI(remoteURI: string) {
-    return joinUri(this.getBaseDirURI(), this.getFileNamePrefixForURI(remoteURI))
+  getLocalURIFromLocalFilename(localFileName: string): string {
+    return joinUri(this.getBaseDirURI(), localFileName)
   }
 
   addListener(uri: string, listener: URIEventListener): URIEvent {

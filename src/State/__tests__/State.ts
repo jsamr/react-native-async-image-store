@@ -71,10 +71,10 @@ describe('State class', () => {
   describe('getLocalPathFromURI', () => {
     it('should return path from URI', async () => {
       const uri = 'XXXX'
-      const localURI = 'file:///a/b/c/eeee.jpg'
+      const localFileName = 'eeee.jpg'
       const state = makeState()
-      await state.updateURIModel(uri, { localURI })
-      expect(state.getLocalURIForRemoteURI(uri)).toEqual(localURI)
+      await state.updateURIModel(uri, { localFileName })
+      expect(state.getLocalURIForRemoteURI(uri)).toEqual(localFileName)
     })
   })
   describe('addListener method', () => {

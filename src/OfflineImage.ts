@@ -66,7 +66,7 @@ export type OfflineImageProps<C extends MinimalImageComponentProps> = {
 } & Pick<C, Exclude<keyof C, 'source' | 'style'>>
 
 interface State {
-  localURI: string
+  localFileName: string
   version: string
   fileState: URICacheFileState
   syncState: URICacheSyncState
@@ -96,7 +96,7 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
       syncState: 'IDLE_SUCCESS',
       networkAvailable: false,
       version: '',
-      localURI: ''
+      localFileName: ''
     }
   }
 
@@ -110,7 +110,7 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
       syncState: nextState.syncState,
       networkAvailable: nextState.networkState === 'AVAILABLE',
       version: nextModel.versionTag && nextModel.versionTag.value || this.state.version,
-      localURI: nextModel.localURI
+      localFileName: nextModel.localFileName
     })
     if (nextState.fileState === 'UNAVAILABLE' && nextState.networkState === 'AVAILABLE' && nextState.syncState !== 'IDLE_ERROR') {
       await this.store.preloadImage(this.props.source)
@@ -166,8 +166,10 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
       staleWhileRevalidate,
       ...imageProps
     } = this.props
-    const { fileState, syncState, localURI } = this.state
+    const { fileState, syncState, localFileName } = this.state
     const loading = syncState === 'FETCHING' || (syncState === 'REFRESHING' && !staleWhileRevalidate)
+    // tslint:disable-next-line: no-string-literal
+    const localURI = this.store['getLocalURIFromLocalFileName'](localFileName)
     const displayFallback = fileState === 'UNAVAILABLE' && !loading
     if (displayFallback && fallbackStaticSource) {
       return React.createElement(ImageComponent, { source: fallbackStaticSource, ...imageProps })

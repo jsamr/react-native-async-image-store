@@ -19,7 +19,7 @@ export class IODriver implements IODriverInterface {
   protected downloadManager: DownloadManagerInterface
   protected metaInfoFetcher?: (headers: Headers) => any
 
-  constructor(protected name: string, protected config: AsyncImageStoreConfig<any>, protected fileLocator: FileLocatorInterface) {
+  constructor(protected readonly name: string, protected readonly config: AsyncImageStoreConfig<any>, protected readonly fileLocator: FileLocatorInterface) {
     this.fileSystem = new config.FileSystemDriver(name)
     this.downloadManager = new config.DownloadManager()
     this.metaInfoFetcher = config.imageMetaInfoFetcher
@@ -144,20 +144,20 @@ export class IODriver implements IODriverInterface {
   async saveImage({ uri, headers: userHeaders }: ImageSource): Promise<RequestReport> {
     // Override default cache-control
     const headers = mergeDeepRight(userHeaders, { 'Cache-Control': 'max-age=31536000' })
-    const baseLocalURI = this.fileLocator.getFilePrefixURIForRemoteURI(uri)
+    const basename = this.fileLocator.getLocalFileNamePrefixForRemoteURI(uri)
     try {
-      const report = await this.downloadManager.downloadImage(uri, baseLocalURI, headers)
-      let localURI = ''
+      const report = await this.downloadManager.downloadImage(uri, basename, headers)
+      let localFileName = ''
       const error = !report.isOK ? new ImageDownloadFailure(uri, report.status) : null
       if (report.isOK) {
         const extension = this.getImageFileExtensionFromHeaders(uri, report.headers)
-        localURI = `${baseLocalURI}.${extension}`
-        await this.fileSystem.move(baseLocalURI, localURI)
+        localFileName = `${basename}.${extension}`
+        await this.fileSystem.move(basename, this.fileLocator.getLocalURIFromLocalFilename(localFileName))
       }
       return {
         uri,
         error,
-        localURI,
+        localFileName,
         expires: this.config.overrideMaxAge ? this.expiryFromMaxAge(this.config.overrideMaxAge) : this.getExpirationFromHeaders(report.headers),
         versionTag: this.getVersionTagFromHeaders(report.headers),
         metaInfo: this.metaInfoFetcher ? this.metaInfoFetcher(report.headers) : null
@@ -167,7 +167,7 @@ export class IODriver implements IODriverInterface {
         uri,
         error: new ImageDownloadFailure(uri, error.status, error.message),
         expires: 0,
-        localURI: this.fileLocator.getFilePrefixURIForRemoteURI(uri),
+        localFileName: '',
         versionTag: null,
         metaInfo: null
       }

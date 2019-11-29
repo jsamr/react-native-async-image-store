@@ -169,7 +169,7 @@ export interface RequestReport<T = any> {
   expires: number
   error: Error|null
   versionTag: URIVersionTag | null
-  localURI: string
+  localFileName: string
   metaInfo: T
 }
 
@@ -193,7 +193,7 @@ export interface URICacheModel<T = any> {
   fileExists: boolean
   expired: boolean
   fetching: boolean
-  localURI: string
+  localFileName: string
   versionTag: URIVersionTag|null
   error: Error|null
   metaInfo: T|null
@@ -235,15 +235,22 @@ export interface FileLocatorInterface {
   getLocalURIForRemoteURI(remoteURI: string): string
 
   /**
-   * Get prefix of permanent file URI
+   * Deterministically construct the full file URI from local file name.
+   * 
+   * @param localFileName 
+   */
+  getLocalURIFromLocalFilename(localFileName: string): string
+
+  /**
+   * Get local file name from URI
    * @param uri
    */
-  getFilePrefixURIForRemoteURI(remoteURI: string): string
+  getLocalFileNameForRemoteURI(remoteURI: string): string
 
   /**
    * Get file name prefix (without extension)
    */
-  getFileNamePrefixForURI(remoteURI: string): string
+  getLocalFileNamePrefixForRemoteURI(remoteURI: string): string
 }
 
 export interface StateInterface extends FileLocatorInterface {

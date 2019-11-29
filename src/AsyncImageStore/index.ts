@@ -30,10 +30,10 @@ function getSourceFromUri(target: Target): ImageSource {
 }
 
 function reportToProposal(report: RequestReport): URIPatch {
-  const { localURI, versionTag, expires, metaInfo, error } = report
+  const { localFileName, versionTag, expires, metaInfo, error } = report
   return {
     versionTag,
-    localURI,
+    localFileName,
     metaInfo,
     error,
     expired: expires < new Date().getTime(),
@@ -206,6 +206,10 @@ export class AsyncImageStore<T extends object = any> {
 
   private assertMountInvariant() {
     invariant(this.mounted, `${this.constructor.name} actions must be invoked after mounting occurs, but Store \`${this.name}' is unmounted.`)
+  }
+
+  protected getLocalURIFromLocalFileName(localFileName: string): string {
+    return this.state.getLocalURIFromLocalFilename(localFileName)
   }
 
   /**
