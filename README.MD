@@ -1,6 +1,8 @@
 # The async image store for react native
 
-**Motivations**: There is already a lot of great libraries for caching images in React Native. But I couldn't find one which allowed me to fully **control** my image assets and their persistance.
+**Canonical Use Case, the Wiki app**: The canonical use case is an app with lots of dynamic content which must be displayed offline, including images. You would have a launch sync step where you fetch relevant contents for the user. Of course, you could base64-encode those images, but that would cost a 30% data-space and eventually bandwidth growth.
+
+**Motivations**: There is already a lot of great libraries for caching images in React Native. But I couldn't find one which allowed me to fully **control** my image assets and their persistence, guaranteeing an offline access when required.
 
 **Pros**:
 
