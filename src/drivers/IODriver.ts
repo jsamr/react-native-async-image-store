@@ -145,14 +145,15 @@ export class IODriver implements IODriverInterface {
     // Override default cache-control
     const headers = mergeDeepRight(userHeaders, { 'Cache-Control': 'max-age=31536000' })
     const basename = this.fileLocator.getLocalFileNamePrefixForRemoteURI(uri)
+    const temporaryLocalUri = this.fileLocator.getLocalURIFromLocalFilename(basename)
     try {
-      const report = await this.downloadManager.downloadImage(uri, basename, headers)
+      const report = await this.downloadManager.downloadImage(uri, temporaryLocalUri, headers)
       let localFileName = ''
       const error = !report.isOK ? new ImageDownloadFailure(uri, report.status) : null
       if (report.isOK) {
         const extension = this.getImageFileExtensionFromHeaders(uri, report.headers)
         localFileName = `${basename}.${extension}`
-        await this.fileSystem.move(basename, this.fileLocator.getLocalURIFromLocalFilename(localFileName))
+        await this.fileSystem.move(temporaryLocalUri, this.fileLocator.getLocalURIFromLocalFilename(localFileName))
       }
       return {
         uri,
