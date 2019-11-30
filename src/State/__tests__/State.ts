@@ -2,7 +2,7 @@
 // tslint:disable:no-empty
 
 import { State, Reactor, DEBOUNCE_DELAY } from '../'
-import { URIEvent, URICacheRegistry, AsyncImageStoreConfig, FileSystemDriverInterface, DownloadManagerInterface, DownloadReport } from '@src/interfaces'
+import { URIEvent, URICacheRegistry, AsyncImageStoreConfig, FileSystemDriverInterface, DownloadManagerInterface, DownloadReport, StorageDriverInterface } from '@src/interfaces'
 import { defaultConfig } from '@src/default-config'
 
 class StupidFileSystemDriver implements FileSystemDriverInterface {
@@ -27,6 +27,22 @@ class StupidFileSystemDriver implements FileSystemDriverInterface {
 }
 
 // tslint:disable-next-line: max-classes-per-file
+class StupidStorageDriver implements StorageDriverInterface {
+  async load(): Promise<URICacheRegistry | null> {
+    return Promise.resolve(null)
+  }
+
+  async save(registry: URICacheRegistry): Promise<void> {
+
+  }
+
+  async clear(): Promise<void> {
+
+  }
+
+}
+
+// tslint:disable-next-line: max-classes-per-file
 class StupidDownloadManager implements DownloadManagerInterface {
   async downloadImage(remoteURI: string, localURI: string, headers: Record<string, string>): Promise<DownloadReport> {
     const report: DownloadReport = {
@@ -41,6 +57,7 @@ class StupidDownloadManager implements DownloadManagerInterface {
 
 const enhancedConfig: AsyncImageStoreConfig<{}> = {
   ...defaultConfig,
+  StorageDriver: StupidStorageDriver,
   FileSystemDriver: StupidFileSystemDriver,
   DownloadManager: StupidDownloadManager
 }

@@ -53,18 +53,6 @@ export interface BaseAsyncImageStoreConfig<T extends object> {
    */
   maxParallelDownloads: number
   /**
-   * A `class` which produces `StorageDriverInterface` instances.
-   * This driver is used to persist meta-information about updates.
-   * 
-   * **Default**: The default implementation uses `AsyncStorage`
-   * 
-   * @see StorageDriverInterface
-   * @see StorageDriverClass
-   * @see URICacheRegistry
-   * 
-   */
-  StorageDriver: StorageDriverClass<any>
-  /**
    * A `class` which produces `IODriverInterface` instances.
    * This driver is used to store, delete and check images existence.
    * 
@@ -97,6 +85,16 @@ export interface MandatoryUserAsyncImageStoreConfig {
    * This driver is used to move images file through URIs.
    */
   FileSystemDriver: FileSystemDriverClass
+  /**
+   * A `class` which produces `StorageDriverInterface` instances.
+   * This driver is used to persist meta-information about updates.
+   * 
+   * @see StorageDriverInterface
+   * @see StorageDriverClass
+   * @see URICacheRegistry
+   * 
+   */
+  StorageDriver: StorageDriverClass<any>
 }
 
 export type UserImageStoreConfig<T extends object> = Partial<AsyncImageStoreConfig<T>> & MandatoryUserAsyncImageStoreConfig
