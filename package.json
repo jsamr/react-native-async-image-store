@@ -1,6 +1,6 @@
 {
   "name": "react-native-async-image-store",
-  "version": "0.12.0-alpha.3",
+  "version": "0.13.0-alpha.0",
   "repository": "git@github.com:jsamr/react-native-async-image-store.git",
   "author": "Jules Randolph <jules.sam.randolph@gmail.com>",
   "license": "MIT",
