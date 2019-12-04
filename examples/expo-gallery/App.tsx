@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, Dimensions, ScrollView, Button, Platform, ProgressBarAndroid, ProgressViewIOS } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, Dimensions, ScrollView, Button, Platform, ProgressBarAndroid, ProgressViewIOS, SafeAreaView } from 'react-native';
 import { imageStore } from './src/store';
 import { URIEvent, OfflineImage } from 'react-native-async-image-store';
 
@@ -22,7 +22,7 @@ function Images() {
   const height = width / 1.5
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
-      {images.map((uri) => <OfflineImage style={{ width, height }} storeName={'GoldenProject'} height={height} width={width} key={uri} source={{ uri }} />)}
+      {images.map((uri) => <OfflineImage reactive staleWhileRevalidate style={{ width, height }} storeName={'GoldenProject'} height={height} width={width} key={uri} source={{ uri }} />)}
     </ScrollView>
   )
 }
@@ -30,7 +30,7 @@ function Images() {
 function LoadingIndicator({ downloaded, total }: { downloaded: number, total: number }) {
   const progress = total === 0 ? 0 : downloaded / total
   return (
-    <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'stretch', margin: 10 }}>
+    <SafeAreaView style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'stretch', margin: 10 }}>
       <ActivityIndicator size="large" />
       <Text style={[styles.textCard, { marginVertical: 10 }]}>
         Images are being synchronized for the first time...
@@ -38,13 +38,13 @@ function LoadingIndicator({ downloaded, total }: { downloaded: number, total: nu
         Just to let you see the sync phase.
       </Text>
       {Platform.OS === 'android' ? <ProgressBarAndroid style={styles.bottomElem} styleAttr="Horizontal" indeterminate={false} progress={progress} /> : <ProgressViewIOS progress={progress} />}
-    </View>
+    </SafeAreaView>
   )
 }
 
 function Card({ clearStore }: { clearStore: () => void }) {
   return (
-    <View pointerEvents="auto" style={styles.cardContainer}>
+    <SafeAreaView pointerEvents="auto" style={styles.cardContainer}>
       <View pointerEvents="auto" style={styles.card}>
         <Text style={styles.textCard}>
           These pictures are now assets of the application, and you have total control over their lifetime. The app has access to these while offline.
@@ -53,7 +53,7 @@ function Card({ clearStore }: { clearStore: () => void }) {
           <Button title="Reinitialize" onPress={clearStore} />
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 
