@@ -83,7 +83,6 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
   }
 
   private store: AsyncImageStore
-  private imageRef = React.createRef<React.Component<C>>()
 
   constructor(props: OfflineImageProps<C>) {
     super(props)
@@ -137,19 +136,13 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
     this.unregisterListener(this.props)
   }
 
-  async componentDidUpdate(oldProps: OfflineImageProps<C>, oldState: State): Promise<void> {
+  async componentDidUpdate(oldProps: OfflineImageProps<C>/*, oldState: State*/): Promise<void> {
     const nextProps = this.props
-    const nextState = this.state
     invariant(oldProps.storeName === nextProps.storeName, 'OfflineImage: storeName prop cannot be set dynamically.')
     invariant(nextProps.source && nextProps.source.uri !== null, 'OfflineImage: the source prop must contain a `uri` field.')
     if (oldProps.source.uri !== nextProps.source.uri) {
       this.unregisterListener(oldProps)
       await this.registerListener(nextProps)
-    }
-    if (nextState.version !== oldState.version && nextState.syncState === 'IDLE_SUCCESS') {
-      // Force update since local version has changed
-      const imageComponent = this.imageRef.current
-      imageComponent && imageComponent.forceUpdate()
     }
   }
 
@@ -161,9 +154,10 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
       fallbackStaticSource,
       storeName,
       staleWhileRevalidate,
+      reactive,
       ...imageProps
     } = this.props
-    const { fileState, syncState, localFileName } = this.state
+    const { fileState, syncState, localFileName, version } = this.state
     const loading = syncState === 'FETCHING' || (syncState === 'REFRESHING' && !staleWhileRevalidate)
     // tslint:disable-next-line: no-string-literal
     const localURI = this.store['getLocalURIFromLocalFileName'](localFileName)
@@ -174,6 +168,7 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
     if (loading || displayFallback) {
       return <LoadingIndicatorComponent {...imageProps} />
     }
-    return <ImageComponent {...imageProps} source={{ uri: localURI }} ref={this.imageRef} />
+    const imageKey = reactive && version ? `${source.uri}-${version}` : source.uri
+    return <ImageComponent {...imageProps} source={{ uri: localURI }} key={imageKey} />
   }
 }
