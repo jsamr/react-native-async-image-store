@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Expo Gallery",
-    "slug": "expo-wiki",
+    "name": "Expo Immutable Gallery",
+    "slug": "expo-immutable-gallery",
     "privacy": "public",
     "sdkVersion": "35.0.0",
     "platforms": [
