@@ -1,4 +1,4 @@
-import React, { ComponentType, PureComponent, Component } from 'react'
+import React, { ComponentType, PureComponent } from 'react'
 import { ImageProps, Image, ImageRequireSource, ActivityIndicator, ImageSourcePropType, StyleProp } from 'react-native'
 import invariant from 'invariant'
 import { AsyncImageStore, getStoreByName } from './AsyncImageStore'
