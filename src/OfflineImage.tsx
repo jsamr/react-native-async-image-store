@@ -83,7 +83,7 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
   }
 
   private store: AsyncImageStore
-  private ref?: Component<C>
+  private imageRef = React.createRef<React.Component<C>>()
 
   constructor(props: OfflineImageProps<C>) {
     super(props)
@@ -98,10 +98,6 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
       version: '',
       localFileName: ''
     }
-  }
-
-  private onRef = (ref: Component<C>) => {
-    this.ref = ref
   }
 
   private onCacheEvent = async ({ nextState, nextModel }: URIEvent) => {
@@ -152,7 +148,8 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
     }
     if (nextState.version !== oldState.version && nextState.syncState === 'IDLE_SUCCESS') {
       // Force update since local version has changed
-      this.ref && this.ref.forceUpdate()
+      const imageComponent = this.imageRef.current
+      imageComponent && imageComponent.forceUpdate()
     }
   }
 
@@ -172,11 +169,11 @@ export class OfflineImage<C extends MinimalImageComponentProps = ImageProps> ext
     const localURI = this.store['getLocalURIFromLocalFileName'](localFileName)
     const displayFallback = fileState === 'UNAVAILABLE' && !loading
     if (displayFallback && fallbackStaticSource) {
-      return React.createElement(ImageComponent, { source: fallbackStaticSource, ...imageProps })
+      return <ImageComponent {...imageProps} source={fallbackStaticSource} />
     }
     if (loading || displayFallback) {
-      return React.createElement(LoadingIndicatorComponent, imageProps)
+      return <LoadingIndicatorComponent {...imageProps} />
     }
-    return React.createElement(ImageComponent, { source: { uri: localURI }, ref: this.onRef, ...imageProps })
+    return <ImageComponent {...imageProps} source={{ uri: localURI }} ref={this.imageRef} />
   }
 }
