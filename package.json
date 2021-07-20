@@ -34,7 +34,7 @@
     "jest": "^24.5.0",
     "metro-react-native-babel-preset": "^0.53.1",
     "react": "^16.8.1",
-    "react-native": "^0.59.1",
+    "react-native": "^0.62.3",
     "rimraf": "^2.6.3",
     "ts-essentials": "^1.0.2",
     "tslint": "^5.12.1",
